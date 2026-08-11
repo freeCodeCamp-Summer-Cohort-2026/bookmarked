@@ -47,6 +47,18 @@ describe("POST /api/resources", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects a resource with an invalid URL", async () => {
+    const { token } = await registerAndLogin("owner3@example.com");
+
+    const res = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Invalid URL", url: "not-a-url" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("url must start with http:// or https://");
+  });
+
   it("rejects unauthenticated requests", async () => {
     const res = await request(app)
       .post("/api/resources")
