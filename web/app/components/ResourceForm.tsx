@@ -34,7 +34,7 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
     try {
       const { resource } = await createResource(
         { title, url, description, tags },
-        auth!.token
+        auth!.token,
       );
       setTitle("");
       setUrl("");
@@ -63,12 +63,15 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
         onChange={(e) => setUrl(e.target.value)}
         required
       />
-      <textarea
-        placeholder="Why is this worth sharing? (optional)"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        maxLength={1000}
-      />
+      <div className="description-field">
+        <textarea
+          placeholder="Why is this worth sharing? (optional)"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          maxLength={1000}
+        />
+        <span className="char-count">{description.length}/1000</span>
+      </div>
       <input
         type="text"
         placeholder="Tags, comma separated (e.g. javascript, beginner)"

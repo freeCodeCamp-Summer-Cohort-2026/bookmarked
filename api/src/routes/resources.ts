@@ -63,6 +63,17 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
       return res.status(400).json({ error: "url is required and cannot be empty" });
     }
 
+    const normalizedUrl = url.trim();
+
+	  if (
+		!normalizedUrl.startsWith("http://") &&
+		!normalizedUrl.startsWith("https://")
+	  ) {
+		return res
+			.status(400)
+			.json({ error: "url must start with http:// or https://" });
+	  }
+
     const normalizedTags: string[] = Array.isArray(tags)
       ? tags.map((tag: string) => tag.trim().toLowerCase()).filter(Boolean)
       : [];
@@ -71,7 +82,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
       data: {
         submittedById: req.user!.id,
         title: title.trim(),
-        url: url.trim(),
+        url: normalizedUrl,
         description: description ? description.trim() : "",
         tags: normalizedTags,
       },
