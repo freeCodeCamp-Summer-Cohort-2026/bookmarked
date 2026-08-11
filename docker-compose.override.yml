@@ -1,0 +1,29 @@
+services:
+  api:
+    build:
+      target: dev
+    develop:
+      watch:
+        - action: sync
+          path: ./api/src
+          target: /app/src
+        - action: rebuild
+          path: ./api/package.json
+        - action: rebuild
+          path: ./api/prisma
+
+  web:
+    build:
+      target: dev
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:4100
+    develop:
+      watch:
+        - action: sync
+          path: ./web
+          target: /app
+          ignore:
+            - node_modules/
+            - .next/
+        - action: rebuild
+          path: ./web/package.json
