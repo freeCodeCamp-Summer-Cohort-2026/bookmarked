@@ -112,6 +112,19 @@ section {
   border: 1px solid #ccc;
 }
 
+.mine-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mine-toggle input {
+  cursor: pointer;
+}
+
 .resource-list {
   display: flex;
   flex-direction: column;
