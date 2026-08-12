@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { Resource } from "@/lib/types";
 import AuthPanel from "./components/AuthPanel";
 import ResourceForm from "./components/ResourceForm";
 import Feed from "./components/Feed";
+import { useSocket } from "@/lib/useSocket";
 
 export default function HomePage() {
   const { auth, ready, signIn, signOut } = useAuth();
   const [refreshToken, setRefreshToken] = useState(0);
+  useSocket(auth)
 
   function handlePosted(_resource: Resource) {
     setRefreshToken((n) => n + 1);
