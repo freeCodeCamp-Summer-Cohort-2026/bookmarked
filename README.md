@@ -112,7 +112,7 @@ CI runs both suites on every push and pull request - see
 ## Screenshots
 
 **Login** : 
-![Login](docs/screenshots/Share_a_resource.png)
+![Login](docs/screenshots/Login.png)
 
 **Share a Resource :**
 ![Share a Resource](docs/screenshots/Share_a_resource.png)
