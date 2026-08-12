@@ -10,12 +10,8 @@ import { useSocket } from "@/lib/useSocket";
 
 export default function HomePage() {
   const { auth, ready, signIn, signOut } = useAuth();
-  const [refreshToken, setRefreshToken] = useState(0);
   const socket = useSocket(auth);
 
-  function handlePosted(_resource: Resource) {
-    setRefreshToken((n) => n + 1);
-  }
 
   return (
     <main className="container">
@@ -26,7 +22,7 @@ export default function HomePage() {
 
       <section>
         <h2>Share a resource</h2>
-        <ResourceForm auth={auth} onPosted={handlePosted} />
+        <ResourceForm auth={auth} />
       </section>
 
       <section>

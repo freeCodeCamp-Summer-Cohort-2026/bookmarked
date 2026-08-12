@@ -6,10 +6,9 @@ import { AuthState, Resource } from "@/lib/types";
 
 interface ResourceFormProps {
   auth: AuthState | null;
-  onPosted: (resource: Resource) => void;
 }
 
-export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
+export default function ResourceForm({ auth }: ResourceFormProps) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
@@ -40,7 +39,6 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
       setUrl("");
       setDescription("");
       setTagsInput("");
-      onPosted(resource);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }

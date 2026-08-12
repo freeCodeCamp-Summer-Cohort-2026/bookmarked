@@ -11,7 +11,7 @@ interface FeedProps {
   socket: Socket | null;
 }
 
-export default function Feed({ auth, refreshToken, socket }: FeedProps) {
+export default function Feed({ auth, socket }: FeedProps) {
   const [resources, setResources] = useState<Resource[]>([]);
   const [tagFilter, setTagFilter] = useState("");
   const [mineOnly, setMineOnly] = useState(false);
@@ -43,7 +43,7 @@ export default function Feed({ auth, refreshToken, socket }: FeedProps) {
     return () => {
       cancelled = true;
     };
-  }, [tagFilter, refreshToken, mineOnly, auth]);
+  }, [tagFilter, mineOnly, auth]);
 
   useEffect(() => {
     if (!socket) return;
