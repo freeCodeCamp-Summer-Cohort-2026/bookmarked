@@ -25,3 +25,14 @@ COPY --from=builder /app/.next/static ./.next/static
 EXPOSE 3000
 
 CMD ["node", "server.js"]
+
+# hot-reload for development, targeted by docker-compose.dev.yml so it doesn't touch production environments
+FROM node:20-alpine AS dev
+WORKDIR /app
+ARG NEXT_PUBLIC_API_URL=http://localhost:4100
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+COPY package*.json ./
+RUN npm install
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+CMD [ "npm", "run", "dev" ]
