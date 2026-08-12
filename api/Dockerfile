@@ -32,3 +32,21 @@ EXPOSE 4100
 # Apply any pending migrations, then start the server. Safe to run on every
 # container start - Prisma tracks which migrations have already applied.
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+
+# Hot reload for development, targeted by docker-compose.dev.yml so it doesn't
+# affect production environments.
+FROM node:20-alpine AS dev
+
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY prisma ./prisma
+RUN npm install
+
+COPY . .
+
+EXPOSE 4100
+
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run dev"]

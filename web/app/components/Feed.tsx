@@ -15,18 +15,28 @@ interface FeedProps {
 export default function Feed({ auth, refreshToken, socket }: FeedProps) {
   const [resources, setResources] = useState<Resource[]>([]);
   const [tagFilter, setTagFilter] = useState("");
+  const [mineOnly, setMineOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!auth) setMineOnly(false);
+  }, [auth]);
+
+  useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    listResources({ tag: tagFilter || undefined })
+    listResources({
+      tag: tagFilter || undefined,
+      submittedBy: mineOnly && auth ? auth.user.id : undefined,
+    })
       .then(({ resources: fetched }) => {
         if (!cancelled) setResources(fetched);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Something went wrong");
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Something went wrong");
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -34,7 +44,7 @@ export default function Feed({ auth, refreshToken, socket }: FeedProps) {
     return () => {
       cancelled = true;
     };
-  }, [tagFilter, refreshToken]);
+  }, [tagFilter, refreshToken, mineOnly, auth]);
 
   useEffect(() => {
     if (!socket) return;
@@ -46,6 +56,7 @@ export default function Feed({ auth, refreshToken, socket }: FeedProps) {
     function handleUpdated(updated: Resource) {
       setResources((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
     }
+
     socket.on("resource:created", handleCreated);
     socket.on("resource:updated", handleUpdated);
     return () => {
@@ -62,11 +73,17 @@ export default function Feed({ auth, refreshToken, socket }: FeedProps) {
     return Array.from(set).sort();
   }, [resources]);
 
+  function handleReactionUpdated(updated: Resource) {
+    setResources((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  }
 
   return (
     <div className="feed">
       <div className="filter-bar">
-        <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
+        <select
+          value={tagFilter}
+          onChange={(e) => setTagFilter(e.target.value)}
+        >
           <option value="">All tags</option>
           {tags.map((tag) => (
             <option key={tag} value={tag}>
@@ -74,11 +91,27 @@ export default function Feed({ auth, refreshToken, socket }: FeedProps) {
             </option>
           ))}
         </select>
+        {auth && (
+          <label className="mine-toggle">
+            <input
+              type="checkbox"
+              checked={mineOnly}
+              onChange={(e) => setMineOnly(e.target.checked)}
+            />
+            My resources
+          </label>
+        )}
       </div>
 
       {error && <p className="error">{error}</p>}
       {loading && <p className="hint">Loading resources...</p>}
-      {!loading && resources.length === 0 && <p className="hint">No resources yet.</p>}
+      {!loading && resources.length === 0 && (
+        <p className="hint">
+          {mineOnly
+            ? "You haven't submitted any resources yet."
+            : "No resources yet."}
+        </p>
+      )}
 
       <div className="resource-list">
         {resources.map((resource) => (
@@ -86,7 +119,7 @@ export default function Feed({ auth, refreshToken, socket }: FeedProps) {
             key={resource.id}
             resource={resource}
             auth={auth}
-            onUpdated={handleUpdated}
+            onUpdated={handleReactionUpdated}
           />
         ))}
       </div>

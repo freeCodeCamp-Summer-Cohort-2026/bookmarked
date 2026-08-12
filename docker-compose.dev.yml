@@ -1,0 +1,30 @@
+# run dev with live reload using:
+# docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build --watch
+# or, use the 'npm run hot-reload' from the repositiory base-directory
+services:
+  api:
+    build:
+      target: dev
+    develop:
+      watch:
+        - action: sync
+          path: ./api
+          target: /app
+          ignore:
+            - node_modules
+            - dist
+        - action: rebuild
+          path: ./api/package.json
+  web:
+    build:
+      target: dev
+    develop:
+      watch:
+        - action: sync
+          path: ./web
+          target: /app
+          ignore:
+            - node_modules
+            - .next
+        - action: rebuild
+          path: ./web/package.json
