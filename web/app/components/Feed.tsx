@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { Socket } from "socket.io-client";
 import { listResources } from "@/lib/api";
 import { AuthState, Resource } from "@/lib/types";
 import ResourceCard from "./ResourceCard";
@@ -8,9 +9,10 @@ import ResourceCard from "./ResourceCard";
 interface FeedProps {
   auth: AuthState | null;
   refreshToken: number;
+  socket: Socket | null;
 }
 
-export default function Feed({ auth, refreshToken }: FeedProps) {
+export default function Feed({ auth, refreshToken, socket }: FeedProps) {
   const [resources, setResources] = useState<Resource[]>([]);
   const [tagFilter, setTagFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +36,24 @@ export default function Feed({ auth, refreshToken }: FeedProps) {
     };
   }, [tagFilter, refreshToken]);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    function handleCreated(resource: Resource) {
+      setResources((prev) => [resource, ...prev]);
+    }
+
+    function handleUpdated(updated: Resource) {
+      setResources((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    }
+    socket.on("resource:created", handleCreated);
+    socket.on("resource:updated", handleUpdated);
+    return () => {
+      socket.off("resource:created", handleCreated);
+      socket.off("resource:updated", handleUpdated);
+    };
+  }, [socket]);
+
   const tags = useMemo(() => {
     const set = new Set<string>();
     for (const r of resources) {
@@ -42,9 +62,6 @@ export default function Feed({ auth, refreshToken }: FeedProps) {
     return Array.from(set).sort();
   }, [resources]);
 
-  function handleUpdated(updated: Resource) {
-    setResources((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-  }
 
   return (
     <div className="feed">

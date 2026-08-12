@@ -11,7 +11,7 @@ import { useSocket } from "@/lib/useSocket";
 export default function HomePage() {
   const { auth, ready, signIn, signOut } = useAuth();
   const [refreshToken, setRefreshToken] = useState(0);
-  useSocket(auth)
+  const socket = useSocket(auth);
 
   function handlePosted(_resource: Resource) {
     setRefreshToken((n) => n + 1);
@@ -31,7 +31,7 @@ export default function HomePage() {
 
       <section>
         <h2>My Feed</h2>
-        <Feed auth={auth} refreshToken={refreshToken} />
+        <Feed auth={auth} refreshToken={refreshToken} socket={socket} />
       </section>
     </main>
   );
