@@ -77,7 +77,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
       },
       include: resourceInclude,
     });
-
+    req.app.get("io").emit("resource:created", resource);
     return res.status(201).json({ resource });
   } catch (err) {
     return res.status(500).json({ error: "Failed to create resource" });
@@ -119,7 +119,7 @@ router.post("/:id/reactions", requireAuth, async (req: Request, res: Response) =
       where: { id: resource.id },
       include: resourceInclude,
     });
-
+    req.app.get("io").emit("resource:updated", updated);
     return res.status(201).json({ resource: updated });
   } catch (err) {
     return res.status(400).json({ error: "Invalid resource id" });
@@ -149,6 +149,7 @@ router.delete("/:id/reactions/:reactionId", requireAuth, async (req: Request, re
       return res.status(404).json({ error: "Resource not found" });
     }
 
+    req.app.get("io").emit("resource:updated", updated);
     return res.json({ resource: updated });
   } catch (err) {
     return res.status(400).json({ error: "Invalid resource or reaction id" });
