@@ -12,6 +12,17 @@ describe("groupReactions", () => {
     expect(groupReactions(reactions)).toEqual({ "⭐": 2, "🔖": 1 });
   });
 
+  it("counts reactions by three or more and repeated emoji", ()  => {
+    const newReactions = [
+      { id: "r1", emoji: "⭐" },
+      { id: "r2", emoji: "🔖" },
+      { id: "r3", emoji: "⭐" },
+      { id: "r4", emoji: "🔖" },
+      { id: "r5", emoji: "✅" },
+    ];
+    expect(groupReactions(newReactions)).toEqual({"⭐": 2, "🔖": 2,"✅": 1})
+  });
+
   it("returns an empty object for no reactions", () => {
     expect(groupReactions([])).toEqual({});
   });
