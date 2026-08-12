@@ -31,7 +31,7 @@ export default function HomePage() {
 
       <section>
         <h2>My Feed</h2>
-        <Feed auth={auth} refreshToken={refreshToken} socket={socket} />
+        <Feed auth={auth} socket={socket} />
       </section>
     </main>
   );

@@ -8,7 +8,6 @@ import ResourceCard from "./ResourceCard";
 
 interface FeedProps {
   auth: AuthState | null;
-  refreshToken: number;
   socket: Socket | null;
 }
 
