@@ -41,6 +41,11 @@ describe("ResourceCard", () => {
   it("does not show reaction buttons when logged out", () => {
     render(<ResourceCard resource={resource} auth={null} onUpdated={() => {}} />);
 
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "⭐" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "🔖" }),
+    ).not.toBeInTheDocument();
   });
 });

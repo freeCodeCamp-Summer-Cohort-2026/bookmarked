@@ -205,6 +205,15 @@ section {
   cursor: pointer;
 }
 
+.copy-link-button {
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
 .hint {
   color: #666;
   font-style: italic;
