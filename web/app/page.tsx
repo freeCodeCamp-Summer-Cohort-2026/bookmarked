@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { Resource } from "@/lib/types";
 import AuthPanel from "./components/AuthPanel";
