@@ -32,9 +32,17 @@ export default function Page() {
   }
 
   useEffect(() => {
+    let ignore = false;
     getResource(id)
-      .then((data) => setResource(data.resource))
-      .catch((error) => setError(error.message));
+      .then((data) => {
+        if (!ignore) setResource(data.resource);
+      })
+      .catch((error) => {
+        if (!ignore) setError(error.message);
+      });
+    return () => {
+      ignore = true;
+    };
   }, [id]);
 
   if (error) return <p className="error">{error}</p>;

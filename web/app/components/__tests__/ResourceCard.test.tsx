@@ -84,6 +84,16 @@ describe("ResourceCard", () => {
     expect(screen.getByText("beginner")).toBeInTheDocument();
   });
 
+  test("navigates to the correct link when 'View Details' is clicked", () => {
+    render(
+      <ResourceCard resource={resource} auth={null} onUpdated={() => {}} onDeleted={()=>{}} />,
+    );
+    expect(screen.getByRole("link", { name: "View Details" })).toHaveAttribute(
+      "href",
+      `/${resource.id}`,
+    );
+  });
+
   it("does not show reaction buttons when logged out", () => {
     render(<ResourceCard resource={resource} auth={null} onUpdated={() => {}} onDeleted={() => {}}/>);
 
