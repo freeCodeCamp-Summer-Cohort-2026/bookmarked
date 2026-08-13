@@ -1,5 +1,7 @@
 node_modules
 dist
+.git
+npm-debug.log
 .tmp-test-pgdata
 coverage
 .env

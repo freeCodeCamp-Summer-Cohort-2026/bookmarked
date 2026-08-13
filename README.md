@@ -30,7 +30,7 @@ The fastest way to run the whole stack is Docker Compose:
 
 ```bash
 cp .env.example .env
-docker-compose up --build
+docker compose up --build
 ```
 
 This starts three services:
@@ -42,7 +42,7 @@ This starts three services:
 Once it's up, seed some demo data:
 
 ```bash
-docker-compose exec api npm run seed:compiled
+docker compose exec api npm run seed:compiled
 ```
 
 (`seed:compiled` runs the already-built `dist/seed.js` - the Docker image is
@@ -74,15 +74,15 @@ npm run dev
 
 ## API overview
 
-| Method | Route                              | Auth required | Description                     |
-| ------ | ----------------------------------- | -------------- | -------------------------------- |
-| POST   | `/api/auth/register`                | no             | Create an account                |
-| POST   | `/api/auth/login`                   | no             | Log in, get a JWT                |
-| GET    | `/api/resources`                    | no             | List resources, optional `?tag=` / `?submittedBy=` filters |
-| GET    | `/api/resources/:id`                | no             | Get a single resource            |
-| POST   | `/api/resources`                    | yes            | Share a new resource             |
-| POST   | `/api/resources/:id/reactions`      | yes            | Add an emoji reaction            |
-| DELETE | `/api/resources/:id/reactions/:rid` | yes            | Remove your own reaction         |
+| Method | Route                               | Auth required | Description                                                |
+| ------ | ----------------------------------- | ------------- | ---------------------------------------------------------- |
+| POST   | `/api/auth/register`                | no            | Create an account                                          |
+| POST   | `/api/auth/login`                   | no            | Log in, get a JWT                                          |
+| GET    | `/api/resources`                    | no            | List resources, optional `?tag=` / `?submittedBy=` filters |
+| GET    | `/api/resources/:id`                | no            | Get a single resource                                      |
+| POST   | `/api/resources`                    | yes           | Share a new resource                                       |
+| POST   | `/api/resources/:id/reactions`      | yes           | Add an emoji reaction                                      |
+| DELETE | `/api/resources/:id/reactions/:rid` | yes           | Remove your own reaction                                   |
 
 The data model is intentionally shallow: a `User` has an email, display name,
 and password hash. A `Resource` belongs to a submitting `User`, and has a
@@ -108,6 +108,17 @@ npm test
 
 CI runs both suites on every push and pull request - see
 [.github/workflows/ci.yml](./.github/workflows/ci.yml).
+
+## Screenshots
+
+**Login** : 
+![Login](docs/screenshots/Login.png)
+
+**Share a Resource :**
+![Share a Resource](docs/screenshots/Share_a_resource.png)
+
+**Feed :**
+![Feed](docs/screenshots/Feed.png)
 
 ## Contributing
 

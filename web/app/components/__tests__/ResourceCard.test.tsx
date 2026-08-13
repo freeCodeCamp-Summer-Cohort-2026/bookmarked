@@ -70,6 +70,11 @@ describe("ResourceCard", () => {
 		},
   };
 
+  const auth: AuthState = {
+  token: "fake-token",
+  user: { id: "u2", displayName: "Diego", email: "d@example.com", role: "member" },
+};
+
   it("renders the resource title, author, and tags", () => {
     render(<ResourceCard resource={resource} auth={null} onUpdated={() => {}} onDeleted={() => {}}/>);
 
@@ -149,4 +154,10 @@ describe("ResourceCard", () => {
 			screen.queryByRole("button", { name: "Delete" }),
 		).not.toBeInTheDocument();
   });
+
+   it("shows the report button when logged in", () => {
+  render(<ResourceCard resource={resource} auth={auth} onUpdated={() => {}} onDeleted={() => {}} />);
+
+  expect(screen.getByText("Report broken link")).toBeInTheDocument();
+});
 });

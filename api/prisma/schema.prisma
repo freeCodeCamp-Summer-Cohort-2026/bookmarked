@@ -37,7 +37,7 @@ model Resource {
 
   submittedBy   User     @relation(fields: [submittedById], references: [id])
   submittedById String
-
+  reportCount  Int @default(0)
   reactions     Reaction[]
 
   @@index([submittedById])

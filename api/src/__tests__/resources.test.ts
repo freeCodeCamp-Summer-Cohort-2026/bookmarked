@@ -269,3 +269,24 @@ describe("DELETE /api/resources/:id/reactions/:reactionId", () => {
     expect(deleteRes.status).toBe(403);
   });
 });
+
+describe("POST /api/resources/:id/report", ()=> {
+  it("it allows a user to flag a broken url", async ()=> {
+    const { token } = await registerAndLogin("reporter@example.com");
+
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Reportable", url: "https://example.com" });
+
+    const resourceId = createRes.body.resource.id;
+
+    const res=await request(app)
+      .post(`/api/resources/${resourceId}/report`)
+      .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.resource.reportCount).toBe(1)
+      
+  })
+})

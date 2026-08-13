@@ -1,6 +1,6 @@
 import { AuthState, Resource } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4100";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4100";
 
 interface RequestOptions {
   method?: string;
@@ -71,4 +71,12 @@ export function removeReaction(input: { resourceId: string; reactionId: string }
     `/api/resources/${input.resourceId}/reactions/${input.reactionId}`,
     { method: "DELETE", token }
   );
+}
+
+export function reportResource(resourceId: string, token: string){
+  return request<{resource: Resource}>(`/api/resources/${resourceId}/report`, {
+    method: "POST",
+    token
+  })
+
 }
