@@ -49,11 +49,20 @@ export default function Feed({ auth, socket }: FeedProps) {
     if (!socket) return;
 
     function handleCreated(resource: Resource) {
-      setResources((prev) => [resource, ...prev]);
+      const matchesMineOnlyFilter =
+        !mineOnly || (auth && resource?.submittedBy?.id === auth.user.id);
+      const matchesTagFilter =
+        !tagFilter || (resource.tags && resource.tags.includes(tagFilter));
+
+      if (matchesMineOnlyFilter && matchesTagFilter) {
+        setResources((prev) => [resource, ...prev]);
+      }
     }
 
     function handleUpdated(updated: Resource) {
-      setResources((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+      setResources((prev) =>
+        prev.map((r) => (r.id === updated.id ? updated : r)),
+      );
     }
 
     socket.on("resource:created", handleCreated);
@@ -62,7 +71,7 @@ export default function Feed({ auth, socket }: FeedProps) {
       socket.off("resource:created", handleCreated);
       socket.off("resource:updated", handleUpdated);
     };
-  }, [socket]);
+  }, [socket, auth, mineOnly, tagFilter]);
 
   const tags = useMemo(() => {
     const set = new Set<string>();
@@ -73,7 +82,9 @@ export default function Feed({ auth, socket }: FeedProps) {
   }, [resources]);
 
   function handleReactionUpdated(updated: Resource) {
-    setResources((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    setResources((prev) =>
+      prev.map((r) => (r.id === updated.id ? updated : r)),
+    );
   }
 
   return (
