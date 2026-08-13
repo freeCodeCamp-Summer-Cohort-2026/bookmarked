@@ -59,18 +59,24 @@ router.get("/export", requireAuth, async (req: Request, res: Response) => {
 // GET /api/resources?tag=<tag>&submittedBy=<userId>
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const { tag, submittedBy } = req.query;
+    const { tag, submittedBy, sort } = req.query;
 
     const resources = await prisma.resource.findMany({
       where: {
+
         ...(typeof tag === "string"
           ? { tags: { has: tag.trim().toLowerCase() } }
           : {}),
         ...(typeof submittedBy === "string"
           ? { submittedById: submittedBy }
           : {}),
+
+       
+    
+
       },
-      orderBy: { createdAt: "desc" },
+      //orderBy controls the classification of the posts
+      orderBy: (sort === "top" ) ? {reactions:{_count:"desc"}} : { createdAt: "desc" },
       include: resourceInclude,
     });
 
