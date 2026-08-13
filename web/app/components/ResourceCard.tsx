@@ -6,7 +6,7 @@ import { AuthState, Reaction, Resource } from "@/lib/types";
 
 // Starter emoji set - deliberately small. See the "add another reaction
 // emoji option" good-first-issue for extending this.
-const REACTION_OPTIONS = ["⭐", "🔖"];
+export const REACTION_OPTIONS = ["⭐", "🔖"];
 
 export function groupReactions(reactions: Reaction[]): Record<string, number> {
   const groups: Record<string, number> = {};
@@ -113,8 +113,13 @@ setError(err instanceof Error ? err.message: "Something went wrong");
           ))}
         </div>
       )}
-      {resource.description && <p className="resource-description">{resource.description}</p>}
+      {resource.description && (
+        <p className="resource-description">{resource.description}</p>
+      )}
       <footer>
+        <a className="resource-title-details" href={`${resource.id}`}>
+          View Details
+        </a>
         <time>{new Date(resource.createdAt).toLocaleString()}</time>
         <div className="actions">
           {canDelete && (
