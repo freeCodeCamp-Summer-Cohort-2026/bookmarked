@@ -36,8 +36,8 @@ describe("ResourceCard", () => {
     description: "Great explainer for async/await.",
     tags: ["javascript", "beginner"],
     createdAt: new Date().toISOString(),
-    submittedBy: { id: "u1", displayName: "Amina Yusuf", email: "amina@example.com" },
-    reactions: [{ id: "r1", emoji: "⭐", user: { id: "u2", displayName: "Diego", email: "d@example.com" } }],
+    submittedBy: { id: "u1", displayName: "Amina Yusuf", email: "amina@example.com", role: "member" },
+    reactions: [{ id: "r1", emoji: "⭐", user: { id: "u2", displayName: "Diego", email: "d@example.com", role: "member" } }],
   };
 
   const memberOwnerAuth: AuthState = {
