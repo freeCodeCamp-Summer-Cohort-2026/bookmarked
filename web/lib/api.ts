@@ -1,6 +1,6 @@
 import { AuthState, Resource } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4100";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4100";
 
 interface RequestOptions {
   method?: string;
