@@ -117,7 +117,7 @@ setError(err instanceof Error ? err.message: "Something went wrong");
         <p className="resource-description">{resource.description}</p>
       )}
       <footer>
-        <a className="resource-title-details" href={`${resource.id}`}>
+        <a className="resource-title-details" href={`/${resource.id}`}>
           View Details
         </a>
         <time>{new Date(resource.createdAt).toLocaleString()}</time>

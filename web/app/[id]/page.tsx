@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { groupReactions, REACTION_OPTIONS } from "../components/ResourceCard";
 import "./resource-page.css";
-import { getDisplayName } from "next/dist/shared/lib/utils";
 
 export default function Page() {
   const { auth } = useAuth();
@@ -38,44 +37,6 @@ export default function Page() {
       .catch((error) => setError(error.message));
   }, [id]);
 
-  // sub-component for the emoji logic + reaction logic from ResourceCard
-  function Emojis() {
-    return (
-      <div className="reactions">
-        {Object.entries(reactionGroups).map(([emoji, count]) => (
-          <span key={emoji} className="reaction-count">
-            {emoji} {count}
-          </span>
-        ))}
-        {auth &&
-          REACTION_OPTIONS.map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              className="reaction-button"
-              onClick={() => handleReact(emoji)}
-            >
-              {emoji}
-            </button>
-          ))}
-      </div>
-    );
-  }
-  //tags subcomponent
-  function Tags() {
-    return (
-      resource!.tags?.length > 0 && (
-        <div className="tags">
-          {resource!.tags.map((tag) => (
-            <span key={tag} className="tag">
-              {tag}
-            </span>
-          ))}
-        </div>
-      )
-    );
-  }
-  //finally render the component
   if (error) return <p className="error">{error}</p>;
   if (!resource) {
     return (
@@ -88,15 +49,42 @@ export default function Page() {
     <div className="container">
       <h1>{resource.title}</h1>
       <h2>
-        <a href={`${resource.url}`}>{resource.url}</a>
+        <a href={resource.url} target="_blank" rel="noreferrer noopener">
+          {resource.url}
+        </a>
       </h2>
 
       <div className="tags-container">
-        <Tags />
+        {resource!.tags?.length > 0 && (
+          <div className="tags">
+            {resource!.tags.map((tag) => (
+              <span key={tag} className="tag">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="emoji-container">
-        <Emojis />
+        <div className="reactions">
+          {Object.entries(reactionGroups).map(([emoji, count]) => (
+            <span key={emoji} className="reaction-count">
+              {emoji} {count}
+            </span>
+          ))}
+          {auth &&
+            REACTION_OPTIONS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                className="reaction-button"
+                onClick={() => handleReact(emoji)}
+              >
+                {emoji}
+              </button>
+            ))}
+        </div>
       </div>
 
       <label>Description:</label>
