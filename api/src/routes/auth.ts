@@ -2,17 +2,18 @@ import express, { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../db";
 import { hashPassword, comparePassword } from "../utils/password";
+import { UserRole } from "@prisma/client";
 
 const router = express.Router();
 
-function signToken(user: { id: string; email: string }): string {
-  return jwt.sign({ sub: user.id, email: user.email }, process.env.JWT_SECRET as string, {
+function signToken(user: { id: string; email: string; role: UserRole }): string {
+  return jwt.sign({ sub: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, {
     expiresIn: "7d",
   });
 }
 
-function toPublicUser(user: { id: string; email: string; displayName: string }) {
-  return { id: user.id, email: user.email, displayName: user.displayName };
+function toPublicUser(user: { id: string; email: string; displayName: string; role: UserRole }) {
+  return { id: user.id, email: user.email, displayName: user.displayName, role: user.role };
 }
 
 // POST /api/auth/register

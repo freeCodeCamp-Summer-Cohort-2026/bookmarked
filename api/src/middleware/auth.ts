@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { UserRole } from "@prisma/client";
 
 interface TokenPayload {
   sub: string;
   email: string;
+  role: UserRole;
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
@@ -17,7 +19,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET as string) as TokenPayload;
-    req.user = { id: payload.sub, email: payload.email };
+    req.user = { id: payload.sub, email: payload.email, role: payload.role };
     next();
   } catch (err) {
     res.status(401).json({ error: "Invalid or expired token" });

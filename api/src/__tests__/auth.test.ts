@@ -23,6 +23,7 @@ describe("POST /api/auth/register", () => {
     expect(res.status).toBe(201);
     expect(res.body.token).toBeDefined();
     expect(res.body.user.email).toBe("test@example.com");
+    expect(res.body.user.role).toBe("member");
     expect(res.body.user.passwordHash).toBeUndefined();
   });
 

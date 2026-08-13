@@ -1,12 +1,13 @@
 import "dotenv/config";
 import { prisma } from "./db";
 import { hashPassword } from "./utils/password";
+import { UserRole } from "@prisma/client";
 
-const SEED_USERS = [
-  { email: "amina@bookmarked.dev", displayName: "Amina Yusuf", password: "password123" },
-  { email: "diego@bookmarked.dev", displayName: "Diego Fernandez", password: "password123" },
-  { email: "priya@bookmarked.dev", displayName: "Priya Nair", password: "password123" },
-  { email: "sam@bookmarked.dev", displayName: "Sam Okoro", password: "password123" },
+const SEED_USERS: Array<{ email: string; displayName: string; password: string; role: UserRole }> = [
+  { email: "amina@bookmarked.dev", displayName: "Amina Yusuf", password: "password123", role: "moderator" },
+  { email: "diego@bookmarked.dev", displayName: "Diego Fernandez", password: "password123", role: "member" },
+  { email: "priya@bookmarked.dev", displayName: "Priya Nair", password: "password123", role: "moderator" },
+  { email: "sam@bookmarked.dev", displayName: "Sam Okoro", password: "password123", role: "member" },
 ];
 
 const SEED_RESOURCES = [
@@ -66,10 +67,10 @@ async function seed() {
   for (const u of SEED_USERS) {
     const passwordHash = await hashPassword(u.password);
     const user = await prisma.user.create({
-      data: { email: u.email, displayName: u.displayName, passwordHash },
+      data: { email: u.email, displayName: u.displayName, passwordHash, role: u.role },
     });
     usersByEmail[u.email] = user;
-    console.log(`Created user ${u.email} (password: ${u.password})`);
+    console.log(`Created user ${u.email} (${u.role}, password: ${u.password})`);
   }
 
   const createdResources = [];

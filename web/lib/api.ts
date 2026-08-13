@@ -54,6 +54,10 @@ export function createResource(
   return request<{ resource: Resource }>("/api/resources", { method: "POST", body: input, token });
 }
 
+export function deleteResource(resourceId: string, token: string) {
+  return request<{ message: string }>(`/api/resources/${resourceId}`, { method: "DELETE", token });
+}
+
 export function addReaction(input: { resourceId: string; emoji: string }, token: string) {
   return request<{ resource: Resource }>(`/api/resources/${input.resourceId}/reactions`, {
     method: "POST",

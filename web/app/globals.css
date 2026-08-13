@@ -185,6 +185,21 @@ section {
   gap: 0.5rem;
 }
 
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.delete-button{
+  border: 1px solid #c62828;
+  background: white;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  cursor: pointer;
+  color: #c62828;
+}
+
 .reactions {
   display: flex;
   gap: 0.4rem;

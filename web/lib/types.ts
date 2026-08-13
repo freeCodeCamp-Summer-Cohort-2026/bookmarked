@@ -1,7 +1,10 @@
+export type UserRole = "member" | "moderator";
+
 export interface User {
   id: string;
   email: string;
   displayName: string;
+  role: UserRole;
 }
 
 export interface Reaction {

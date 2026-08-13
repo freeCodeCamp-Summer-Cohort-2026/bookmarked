@@ -57,6 +57,12 @@ export default function Feed({ auth, refreshToken }: FeedProps) {
     );
   }
 
+  function handleDeleted(resourceId: string) {
+		setResources((prev) =>
+			prev.filter((resource) => resource.id !== resourceId),
+		);
+  }
+
   return (
     <div className="feed">
       <div className="filter-bar">
@@ -100,6 +106,7 @@ export default function Feed({ auth, refreshToken }: FeedProps) {
             resource={resource}
             auth={auth}
             onUpdated={handleUpdated}
+            onDeleted={handleDeleted}
           />
         ))}
       </div>

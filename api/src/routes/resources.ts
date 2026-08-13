@@ -137,6 +137,30 @@ router.post("/:id/reactions", requireAuth, async (req: Request, res: Response) =
   }
 });
 
+// DELETE /api/resources/:id
+router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const resource = await prisma.resource.findUnique({ where: { id: req.params.id } });
+
+    if (!resource) {
+      return res.status(404).json({ error: "Resource not found" });
+    }
+
+    const isOwner = resource.submittedById === req.user!.id;
+    const isModerator = req.user!.role === "moderator";
+
+    if (!isOwner && !isModerator) {
+      return res.status(403).json({ error: "You can only delete your own resources" });
+    }
+
+    await prisma.resource.delete({ where: { id: resource.id } });
+
+    return res.json({ message: "Resource deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to delete resource" });
+  }
+});
+
 // DELETE /api/resources/:id/reactions/:reactionId
 router.delete("/:id/reactions/:reactionId", requireAuth, async (req: Request, res: Response) => {
   try {
