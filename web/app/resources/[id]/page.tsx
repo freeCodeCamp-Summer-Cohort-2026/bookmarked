@@ -4,7 +4,7 @@ import { Resource } from "@/lib/types";
 import { useAuth } from "@/lib/useAuth";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { groupReactions, REACTION_OPTIONS } from "../components/ResourceCard";
+import { groupReactions, REACTION_OPTIONS } from "../../components/ResourceCard";
 import "./resource-page.css";
 
 export default function Page() {
