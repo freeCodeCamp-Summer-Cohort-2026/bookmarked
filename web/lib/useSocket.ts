@@ -2,13 +2,14 @@
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { AuthState } from "./types";
+import {API_URL} from "./api"
 
 export function useSocket(auth: AuthState | null) {
   const [socket, setSocket] = useState<Socket | null>(null);
   useEffect(() => {
     if (!auth?.token) return;
 
-    const s = io(`http://localhost:${process.env.PORT || 4100}`, {
+    const s = io(API_URL, {
       auth: { token: auth.token },
     });
 
