@@ -61,6 +61,51 @@ describe("POST /api/resources", () => {
     expect(res.body.resource.tags).toEqual(["js", "beginner"]);
   });
 
+  it("requires confirmation before creating a duplicate URL", async () => {
+    const { token } = await registerAndLogin("duplicate@example.com");
+    const url = "https://example.com/shared";
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Existing resource", url });
+
+    const duplicateRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "My new resource",
+        url,
+        description: "Keep my submitted description",
+        tags: ["Original Tag"],
+      });
+
+    expect(duplicateRes.status).toBe(409);
+    expect(duplicateRes.body.duplicate).toMatchObject({
+      title: "Existing resource",
+      url,
+    });
+
+    const confirmedRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "My new resource",
+        url,
+        description: "Keep my submitted description",
+        tags: ["Original Tag"],
+        confirmDuplicate: true,
+      });
+
+    expect(confirmedRes.status).toBe(201);
+    expect(confirmedRes.body.resource).toMatchObject({
+      title: "My new resource",
+      url,
+      description: "Keep my submitted description",
+      tags: ["original tag"],
+    });
+  });
+
   it("rejects a resource with no title", async () => {
     const { token } = await registerAndLogin("owner2@example.com");
 
