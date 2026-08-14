@@ -1,4 +1,5 @@
-import { DEFAULT_REACTIONS, getQuickReactions } from "../ReactionPicker";
+import { fireEvent, render, screen } from "@testing-library/react";
+import ReactionPicker, { DEFAULT_REACTIONS, getQuickReactions } from "../ReactionPicker";
 
 describe("getQuickReactions", () => {
   it("returns DEFAULT_REACTIONS", () => {
@@ -29,5 +30,103 @@ describe("getQuickReactions", () => {
     const result = getQuickReactions(["❤️", "❤️"]);
 
     expect(result).toEqual(["❤️", "⭐", "🔖"]);
+  });
+});
+
+describe("ReactionPicker", () => {
+  it("renders quick buttons and toggle", () => {
+    render(
+      <ReactionPicker
+        history={[]}
+        onSelect={jest.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "⭐" }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "🔖" }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "👍" }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Toggle reaction menu" }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the complete reaction menu", () => {
+    render(
+      <ReactionPicker
+        history={[]}
+        onSelect={jest.fn()}
+      />,
+    );
+
+    const toggle = screen.getByRole("button", {
+      name: "Toggle reaction menu",
+    });
+
+    expect(
+      screen.queryByRole("button", { name: "🔥" }),
+    ).not.toBeInTheDocument();
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(toggle);
+
+    expect(
+      screen.getByRole("button", { name: "🔥" }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "🚀" }),
+    ).toBeInTheDocument();
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("reports a quick-reaction selection", () => {
+    const handleSelect = jest.fn();
+
+    render(
+      <ReactionPicker
+        history={[]}
+        onSelect={handleSelect}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "⭐" }),
+    );
+
+    expect(handleSelect).toHaveBeenCalledWith("⭐");
+    expect(handleSelect).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a dropdown selection", () => {
+    const handleSelect = jest.fn();
+
+    render(
+      <ReactionPicker
+        history={[]}
+        onSelect={handleSelect}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Toggle reaction menu" }),
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "🔥" }),
+    );
+
+    expect(handleSelect).toHaveBeenCalledWith("🔥");
+    expect(handleSelect).toHaveBeenCalledTimes(1);
   });
 });
