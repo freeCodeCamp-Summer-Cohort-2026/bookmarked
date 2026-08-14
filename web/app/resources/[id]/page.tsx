@@ -1,10 +1,18 @@
 "use client";
-import { addReaction, getResource, reportResource, deleteResource } from "@/lib/api";
+import {
+  addReaction,
+  getResource,
+  reportResource,
+  deleteResource,
+} from "@/lib/api";
 import { Resource } from "@/lib/types";
 import { useAuth } from "@/lib/useAuth";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { groupReactions, REACTION_OPTIONS } from "../../components/ResourceCard";
+import {
+  groupReactions,
+  REACTION_OPTIONS,
+} from "../../components/ResourceCard";
 import "./resource-page.css";
 
 export default function Page() {
@@ -33,7 +41,10 @@ export default function Page() {
     if (!auth || !resource) return;
     setError(null);
     try {
-      const { resource: updated } = await reportResource(resource.id, auth.token);
+      const { resource: updated } = await reportResource(
+        resource.id,
+        auth.token,
+      );
       setResource(updated);
       setReported(true);
     } catch (err) {
@@ -58,7 +69,9 @@ export default function Page() {
   async function handleDelete() {
     if (!auth || !resource || !canDelete) return;
 
-    const confirmed = window.confirm("Are you sure you want to delete this resource?");
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this resource?",
+    );
 
     if (!confirmed) return;
 
@@ -82,7 +95,10 @@ export default function Page() {
   }
 
   const reactionGroups = groupReactions(resource.reactions || []);
-  const canDelete = !!auth && (auth.user.role === "moderator" || auth.user.id === resource.submittedBy?.id);
+  const canDelete =
+    !!auth &&
+    (auth.user.role === "moderator" ||
+      auth.user.id === resource.submittedBy?.id);
 
   return (
     <div className="container">
@@ -131,7 +147,11 @@ export default function Page() {
 
       <div className="actions">
         {canDelete && (
-          <button type="button" className="delete-button" onClick={handleDelete}>
+          <button
+            type="button"
+            className="delete-button"
+            onClick={handleDelete}
+          >
             Delete
           </button>
         )}

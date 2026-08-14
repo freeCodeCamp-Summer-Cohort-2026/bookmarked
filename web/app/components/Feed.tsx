@@ -88,9 +88,9 @@ export default function Feed({ auth, socket }: FeedProps) {
   }
 
   function handleDeleted(resourceId: string) {
-		setResources((prev) =>
-			prev.filter((resource) => resource.id !== resourceId),
-		);
+    setResources((prev) =>
+      prev.filter((resource) => resource.id !== resourceId),
+    );
   }
 
   return (

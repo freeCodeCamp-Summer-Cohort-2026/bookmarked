@@ -4,6 +4,9 @@ export function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, 10);
 }
 
-export function comparePassword(candidate: string, passwordHash: string): Promise<boolean> {
+export function comparePassword(
+  candidate: string,
+  passwordHash: string,
+): Promise<boolean> {
   return bcrypt.compare(candidate, passwordHash);
 }

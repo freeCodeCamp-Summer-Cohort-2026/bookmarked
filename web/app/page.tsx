@@ -12,7 +12,6 @@ export default function HomePage() {
   const { auth, ready, signIn, signOut } = useAuth();
   const socket = useSocket(auth);
 
-
   return (
     <main className="container">
       <h1>Bookmarked</h1>

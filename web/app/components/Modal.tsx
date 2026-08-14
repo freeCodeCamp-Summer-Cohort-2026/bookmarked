@@ -29,7 +29,12 @@ export function Modal({ children, title, onClose, onConfirm }: ModalProps) {
         "button, input, textarea, select, a[href]",
       );
 
-      if (event.key === "Enter" && !event.repeat && !isInteractive && onConfirm) {
+      if (
+        event.key === "Enter" &&
+        !event.repeat &&
+        !isInteractive &&
+        onConfirm
+      ) {
         event.preventDefault();
         void onConfirm();
       }

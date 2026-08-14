@@ -10,7 +10,11 @@ interface AuthPanelProps {
   onSignOut: () => void;
 }
 
-export default function AuthPanel({ auth, onSignIn, onSignOut }: AuthPanelProps) {
+export default function AuthPanel({
+  auth,
+  onSignIn,
+  onSignOut,
+}: AuthPanelProps) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -92,7 +96,11 @@ export default function AuthPanel({ auth, onSignIn, onSignOut }: AuthPanelProps)
         minLength={8}
       />
       <button type="submit" disabled={loading}>
-        {loading ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}
+        {loading
+          ? "Please wait..."
+          : mode === "login"
+            ? "Log in"
+            : "Create account"}
       </button>
       {error && <p className="error">{error}</p>}
     </form>
