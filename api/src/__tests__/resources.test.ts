@@ -115,6 +115,46 @@ describe("GET /api/resources", () => {
   });
 });
 
+describe("POST /api/resources/:id/reactions rate limiting", () => {
+  it("returns a 429 if too many requests are made", async () => {
+    const user = await registerAndLogin("reactor@example.com");
+
+    const resource = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${user.token}`)
+      .send({ title: "MDN Docs", url: "https://developer.mozilla.org", tags: ["JS", " Beginner "] });
+
+    // const limit = 9 // get 3 fail test cases!!
+    const limit = 1 // get 1 fail test case!!
+
+    const resourceID = resource.body.resource.id
+    const route = `/api/resources/${resourceID}/reactions`
+
+    const emojis = [
+      "⭐", "🔥", "💯", "🎉", "✅", "❤️", "👏", "😄", "😎"
+    ];
+
+    // sending within limit successful requests
+    for (let i = 0; i < limit; i++) {
+      await request(app)
+        .post(route)
+        .set("Authorization", `Bearer ${user.token}`)
+        .send({ emoji: emojis[i] })
+        .expect(201);
+    }
+
+    // now one more request (limit+1) with a new emoji to get 429
+    const throttleRes = await request(app)
+      .post(route)
+      .set("Authorization", `Bearer ${user.token}`)
+      .send({ emoji: emojis[limit] })
+      .expect(429);
+
+    expect(throttleRes.status).toBe(429);
+  });
+
+});
+
 describe("DELETE /api/resources/:id", () => {
 	it("allows a member to delete their own resource", async () => {
 		const { token } = await registerAndLogin("owner-delete@example.com");
