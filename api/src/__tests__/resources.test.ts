@@ -287,6 +287,86 @@ describe("POST /api/resources/:id/report", ()=> {
 
       expect(res.status).toBe(200);
       expect(res.body.resource.reportCount).toBe(1)
-      
+
   })
 })
+
+describe("PATCH /api/resources/:id", () => {
+  it("allows the original submitter to edit their resource", async () => {
+    const { token } = await registerAndLogin("editor@example.com");
+
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Old Title", url: "https://example.com", tags: ["old"] });
+
+    const resourceId = createRes.body.resource.id;
+
+    const patchRes = await request(app)
+      .patch(`/api/resources/${resourceId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "New Title", tags: ["new"] });
+
+    expect(patchRes.status).toBe(200);
+    expect(patchRes.body.resource.title).toBe("New Title");
+    expect(patchRes.body.resource.tags).toEqual(["new"]);
+    expect(patchRes.body.resource.url).toBe("https://example.com");
+  });
+
+  it("rejects edits from a user who isn't the original submitter", async () => {
+    const { token: ownerToken } = await registerAndLogin("realowner@example.com");
+    const { token: otherToken } = await registerAndLogin("intruder@example.com");
+
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ title: "Protected", url: "https://example.com" });
+
+    const patchRes = await request(app)
+      .patch(`/api/resources/${createRes.body.resource.id}`)
+      .set("Authorization", `Bearer ${otherToken}`)
+      .send({ title: "Hijacked" });
+
+    expect(patchRes.status).toBe(403);
+  });
+
+  it("rejects unauthenticated requests", async () => {
+    const { token } = await registerAndLogin("owner4@example.com");
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "NoAuthEdit", url: "https://example.com" });
+
+    const res = await request(app)
+      .patch(`/api/resources/${createRes.body.resource.id}`)
+      .send({ title: "Should fail" });
+
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects an empty title", async () => {
+    const { token } = await registerAndLogin("owner5@example.com");
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Valid", url: "https://example.com" });
+
+    const res = await request(app)
+      .patch(`/api/resources/${createRes.body.resource.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("404s for a nonexistent resource", async () => {
+    const { token } = await registerAndLogin("owner6@example.com");
+
+    const res = await request(app)
+      .patch("/api/resources/00000000-0000-0000-0000-000000000000")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Ghost" });
+
+    expect(res.status).toBe(404);
+  });
+});

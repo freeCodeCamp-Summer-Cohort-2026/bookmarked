@@ -58,6 +58,18 @@ export function createResource(
   return request<{ resource: Resource }>("/api/resources", { method: "POST", body: input, token });
 }
 
+export function updateResource(
+  resourceId: string,
+  input: Partial<{ title: string; url: string; description: string; tags: string[] }>,
+  token: string
+) {
+  return request<{ resource: Resource }>(`/api/resources/${resourceId}`, {
+    method: "PATCH",
+    body: input,
+    token,
+  });
+}
+
 export function deleteResource(resourceId: string, token: string) {
   return request<{ message: string }>(`/api/resources/${resourceId}`, { method: "DELETE", token });
 }
