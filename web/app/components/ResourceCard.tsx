@@ -286,7 +286,8 @@ export default function ResourceCard({
                 <button
                   className="resource-btn-action"
                   onClick={() => setIsDescShortened(!isDescShortened)}
-                  aria-label="Expand description"
+                  aria-label="Show less"
+                  title="Show less"
                 >
                   <ChevronUp />
                 </button>
@@ -300,7 +301,8 @@ export default function ResourceCard({
               <button
                 className="resource-btn-action"
                 onClick={() => setIsDescShortened(!isDescShortened)}
-                aria-label="Show more description"
+                aria-label="Show more"
+                title="Show more"
               >
                 <ChevronDown />
               </button>
