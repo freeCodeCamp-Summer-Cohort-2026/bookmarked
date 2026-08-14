@@ -19,6 +19,7 @@ services:
   api:
     build:
       context: ./api
+      target: runner
     restart: unless-stopped
     depends_on:
       db:
@@ -35,6 +36,7 @@ services:
       context: ./web
       args:
         NEXT_PUBLIC_API_URL: http://localhost:4100
+        target: runner
     restart: unless-stopped
     depends_on:
       - api
