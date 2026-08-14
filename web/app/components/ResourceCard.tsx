@@ -4,6 +4,8 @@ import { FormEvent, useState } from "react";
 import {
   CalendarDays,
   Check,
+  ChevronDown,
+  ChevronUp,
   Copy,
   Pencil,
   Save,
@@ -22,7 +24,7 @@ import { Modal } from "./Modal";
 
 // Starter emoji set - deliberately small. See the "add another reaction
 // emoji option" good-first-issue for extending this.
-export const REACTION_OPTIONS = ["⭐", "🔖"];
+export const REACTION_OPTIONS = ["👍", "⭐", "🔖"];
 
 export function groupReactions(reactions: Reaction[]): Record<string, number> {
   const groups: Record<string, number> = {};
@@ -39,11 +41,22 @@ interface ResourceCardProps {
   onDeleted: (resourceId: string) => void;
 }
 
-export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: ResourceCardProps) {
+export default function ResourceCard({
+  resource,
+  auth,
+  onUpdated,
+  onDeleted,
+}: ResourceCardProps) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const reactionGroups = groupReactions(resource.reactions || []);
-  const canDelete = !!auth && (auth.user.role === "moderator" || auth.user.id === resource.submittedBy?.id);
+  const [isDescShortened, setIsDescShortened] = useState(
+    resource.description.length > 200,
+  );
+  const canDelete =
+    !!auth &&
+    (auth.user.role === "moderator" ||
+      auth.user.id === resource.submittedBy?.id);
   const isOwner = !!auth && auth.user.id === resource.submittedBy?.id;
   const [reported, setReported] = useState(false);
 
@@ -70,7 +83,10 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
     if (!auth) return;
     setError(null);
 
-    const tags = editTagsInput.split(",").map((t) => t.trim()).filter(Boolean);
+    const tags = editTagsInput
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
 
     setIsSaving(true);
     try {
@@ -92,7 +108,10 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
     if (!auth) return;
     setError(null);
     try {
-      const { resource: updated } = await reportResource(resource.id, auth.token);
+      const { resource: updated } = await reportResource(
+        resource.id,
+        auth.token,
+      );
       onUpdated(updated);
       setReported(true);
     } catch (err) {
@@ -143,7 +162,10 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
   if (isEditing) {
     return (
       <article className="resource-card resource-card-editing resource-card-owned">
-        <form className="resource-form resource-edit-form" onSubmit={handleEditSubmit}>
+        <form
+          className="resource-form resource-edit-form"
+          onSubmit={handleEditSubmit}
+        >
           <input
             type="text"
             value={editTitle}
@@ -198,7 +220,9 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
   }
 
   return (
-    <article className={`resource-card${isOwner ? " resource-card-owned" : ""}`}>
+    <article
+      className={`resource-card${isOwner ? " resource-card-owned" : ""}`}
+    >
       <header className="resource-card-header">
         <div className="resource-heading">
           <h3 className="resource-title">
@@ -252,7 +276,37 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
       )}
 
       {resource.description && (
-        <p className="resource-description">{resource.description}</p>
+        <p className="resource-description">
+          {resource.description.length && !isDescShortened ? (
+            <div className="resource-description-row">
+              <div className="resource-description-text">
+                {resource.description}
+              </div>
+              {resource.description.length > 200 && (
+                <button
+                  className="resource-btn-action"
+                  onClick={() => setIsDescShortened(!isDescShortened)}
+                  aria-label="Expand description"
+                >
+                  <ChevronUp />
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="resource-description-row">
+              <div className="resource-description-text">
+                {resource.description.substring(0, 200)}...
+              </div>
+              <button
+                className="resource-btn-action"
+                onClick={() => setIsDescShortened(!isDescShortened)}
+                aria-label="Show more description"
+              >
+                <ChevronDown />
+              </button>
+            </div>
+          )}
+        </p>
       )}
 
       <div className="resource-card-toolbar">
