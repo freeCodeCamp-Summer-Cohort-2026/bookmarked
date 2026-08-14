@@ -4,10 +4,7 @@ import { FormEvent, useState } from "react";
 import {
   CalendarDays,
   Check,
-  CircleCheck,
   Copy,
-  ExternalLink,
-  Link2Off,
   Pencil,
   Save,
   Trash2,
@@ -21,6 +18,7 @@ import {
   updateResource,
 } from "@/lib/api";
 import { AuthState, Reaction, Resource } from "@/lib/types";
+import { Modal } from "./Modal";
 
 // Starter emoji set - deliberately small. See the "add another reaction
 // emoji option" good-first-issue for extending this.
@@ -51,6 +49,8 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editTitle, setEditTitle] = useState(resource.title);
   const [editUrl, setEditUrl] = useState(resource.url);
   const [editDescription, setEditDescription] = useState(resource.description);
@@ -124,27 +124,25 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
     }
   }
 
-  async function handleDelete() {
-    if (!auth || !canDelete) return;
-
-    const confirmed = window.confirm("Are you sure you want to delete this resource?");
-
-    if (!confirmed) return;
+  async function confirmDelete() {
+    if (!auth || !canDelete || isDeleting) return;
 
     setError(null);
-
+    setIsDeleting(true);
     try {
       await deleteResource(resource.id, auth.token);
+      setIsDeleteModalOpen(false);
       onDeleted(resource.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsDeleting(false);
     }
-
   }
 
   if (isEditing) {
     return (
-      <article className="resource-card resource-card-editing">
+      <article className="resource-card resource-card-editing resource-card-owned">
         <form className="resource-form resource-edit-form" onSubmit={handleEditSubmit}>
           <input
             type="text"
@@ -200,7 +198,7 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
   }
 
   return (
-    <article className="resource-card">
+    <article className={`resource-card${isOwner ? " resource-card-owned" : ""}`}>
       <header className="resource-card-header">
         <div className="resource-heading">
           <h3 className="resource-title">
@@ -278,35 +276,19 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
             ))}
         </div>
 
-        <div className="resource-card-controls">
-          {auth && (
-            <button
-              type="button"
-              className={`card-icon-button${reported ? " card-icon-button-success" : ""}`}
-              onClick={handleReport}
-              disabled={reported}
-              aria-label={reported ? "Broken link reported" : "Report broken link"}
-              title={reported ? "Broken link reported" : "Report broken link"}
-            >
-              {reported ? (
-                <CircleCheck size={17} aria-hidden="true" />
-              ) : (
-                <Link2Off size={17} aria-hidden="true" />
-              )}
-            </button>
-          )}
-          {canDelete && (
+        {canDelete && (
+          <div className="resource-card-controls">
             <button
               type="button"
               className="card-icon-button card-icon-button-danger"
-              onClick={handleDelete}
+              onClick={() => setIsDeleteModalOpen(true)}
               aria-label="Delete"
               title="Delete resource"
             >
               <Trash2 size={17} aria-hidden="true" />
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <footer className="resource-card-footer">
@@ -314,17 +296,57 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
           <CalendarDays size={14} aria-hidden="true" />
           {new Date(resource.createdAt).toLocaleString()}
         </time>
-        <a
-          className="resource-details-link"
-          href={`/${resource.id}`}
-          aria-label="View Details"
-          title="View details"
-        >
-          <ExternalLink size={15} aria-hidden="true" />
-        </a>
+        <div className="resource-footer-actions">
+          {auth && (
+            <button
+              type="button"
+              className="resource-text-action"
+              onClick={handleReport}
+              disabled={reported}
+            >
+              {reported ? "Reported" : "Report broken link"}
+            </button>
+          )}
+          <a className="resource-text-action" href={`/${resource.id}`}>
+            View Details
+          </a>
+        </div>
       </footer>
 
       {error && <p className="error resource-card-error">{error}</p>}
+
+      {isDeleteModalOpen && (
+        <Modal
+          title="Delete resource"
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={confirmDelete}
+        >
+          <p className="modal-message">
+            Delete <strong>{resource.title}</strong>? This action cannot be
+            undone.
+          </p>
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="modal-secondary"
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={isDeleting}
+            >
+              <span>Cancel</span>
+              <kbd>Esc</kbd>
+            </button>
+            <button
+              type="button"
+              className="modal-danger"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
+              <span>{isDeleting ? "Deleting..." : "Delete resource"}</span>
+              <Trash2 size={17} aria-hidden="true" />
+            </button>
+          </div>
+        </Modal>
+      )}
     </article>
   );
 }
