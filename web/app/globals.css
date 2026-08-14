@@ -4,7 +4,8 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: #f6f7fb;
   color: #1a1a2e;
 }
@@ -191,7 +192,7 @@ section {
   align-items: center;
 }
 
-.delete-button{
+.delete-button {
   border: 1px solid #c62828;
   background: white;
   border-radius: 999px;
@@ -248,4 +249,22 @@ section {
   font-size: 0.8rem;
   color: #888;
   align-self: flex-end;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: black/50;
+}
+
+.modal-content {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 90%;
 }
