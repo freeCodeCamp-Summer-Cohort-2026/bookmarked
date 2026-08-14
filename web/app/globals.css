@@ -258,13 +258,135 @@ section {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: black/50;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.64);
+  backdrop-filter: blur(2px);
 }
 
 .modal-content {
+  width: min(100%, 420px);
+  padding: 1.25rem;
   background: white;
-  padding: 1rem;
-  border-radius: 8px;
-  max-width: 400px;
-  width: 90%;
+  border: 1px solid #e2e5eb;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.22);
+  outline: none;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.modal-close {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: #525866;
+  background: #eef0f3;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  color: #262b35;
+  background: #e2e5e9;
+}
+
+.modal-message {
+  margin: 0.85rem 0 1.25rem;
+  color: #555d6d;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.modal-message strong {
+  color: #202534;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.modal-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modal-cancel {
+  color: #b93832;
+  background: transparent;
+  border: 1px solid #e5a6a1;
+}
+
+.modal-cancel:hover {
+  background: #fff7f6;
+  border-color: #d98f89;
+}
+
+.modal-cancel kbd {
+  padding: 0.15rem 0.4rem;
+  color: #303642;
+  background: #eceef1;
+  border: 1px solid #dfe2e6;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.modal-confirm {
+  color: #1e6b41;
+  background: transparent;
+  border: 1px solid #73b58f;
+}
+
+.modal-confirm:hover {
+  background: #f4faf6;
+  border-color: #5da67d;
+}
+
+.modal-actions button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+.modal-actions button:focus-visible,
+.modal-close:focus-visible {
+  outline: 3px solid rgba(47, 143, 91, 0.22);
+  outline-offset: 2px;
+}
+
+.modal-actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (max-width: 420px) {
+  .modal-actions {
+    grid-template-columns: 1fr;
+  }
 }

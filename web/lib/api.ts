@@ -89,13 +89,11 @@ export function createResource(
   },
   token: string,
 ) {
-  {
-    return request<{ resource: Resource }>("/api/resources", {
-      method: "POST",
-      body: input,
-      token,
-    });
-  }
+  return request<{ resource: Resource }>("/api/resources", {
+    method: "POST",
+    body: input,
+    token,
+  });
 }
 
 export function updateResource(

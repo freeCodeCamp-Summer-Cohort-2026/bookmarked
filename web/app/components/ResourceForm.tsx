@@ -1,13 +1,25 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { createResource } from "@/lib/api";
-import { AuthState, Resource } from "@/lib/types";
-import { ApiError } from "@/lib/api";
+import { CornerDownLeft } from "lucide-react";
+import { ApiError, createResource } from "@/lib/api";
+import { AuthState } from "@/lib/types";
 import { Modal } from "./Modal";
 
 interface ResourceFormProps {
   auth: AuthState | null;
+}
+
+interface ResourceDraft {
+  title: string;
+  url: string;
+  description: string;
+  tags: string[];
+}
+
+interface PendingDuplicate {
+  input: ResourceDraft;
+  existingTitle: string;
 }
 
 export default function ResourceForm({ auth }: ResourceFormProps) {
@@ -16,14 +28,15 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
   const [description, setDescription] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pendingDuplicate, setPendingDuplicate] = useState<Resource | null>(
-    null,
-  );
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendingDuplicate, setPendingDuplicate] =
+    useState<PendingDuplicate | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   if (!auth) {
     return <p className="hint">Log in to share a resource.</p>;
   }
+
+  const token = auth.token;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,18 +49,25 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
       .map((tag) => tag.trim())
       .filter(Boolean);
 
+    const input = { title, url, description, tags };
+
     try {
-      const { resource } = await createResource(
-        { title, url, description, tags },
-        auth!.token,
-      );
+      await createResource(input, token);
       setTitle("");
       setUrl("");
       setDescription("");
       setTagsInput("");
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        setPendingDuplicate(err.data.duplicate);
+        setPendingDuplicate({
+          input,
+          existingTitle:
+            typeof err.data?.duplicate?.title === "string"
+              ? err.data.duplicate.title
+              : title,
+        });
+        setError(null);
+        return;
       }
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
@@ -55,24 +75,27 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
 
   function cancel() {
     setPendingDuplicate(null);
-    setIsModalOpen(false);
   }
 
   async function confirmAnyway() {
-    if (!pendingDuplicate) return;
+    if (!pendingDuplicate || isConfirming) return;
+
+    setIsConfirming(true);
+    setError(null);
     try {
-      const { resource } = await createResource(
-        { ...pendingDuplicate, confirmDuplicate: true },
-        auth!.token,
+      await createResource(
+        { ...pendingDuplicate.input, confirmDuplicate: true },
+        token,
       );
       setTitle("");
       setUrl("");
       setDescription("");
       setTagsInput("");
       setPendingDuplicate(null);
-      setIsModalOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsConfirming(false);
     }
   }
 
@@ -113,13 +136,35 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
         {error && <p className="error">{error}</p>}
       </form>
       {pendingDuplicate && (
-        <Modal onClose={() => setIsModalOpen(false)}>
-          <p>
-            A resource titled <strong>{pendingDuplicate.title}</strong> with
-            this URL already exists. Add it anyway?
+        <Modal
+          title="Duplicate resource"
+          onClose={cancel}
+          onConfirm={confirmAnyway}
+        >
+          <p className="modal-message">
+            A resource titled <strong>{pendingDuplicate.existingTitle}</strong>{" "}
+            already uses this URL. Do you want to add your resource anyway?
           </p>
-          <button onClick={cancel}>Cancel</button>
-          <button onClick={confirmAnyway}>Add anyway</button>
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="modal-cancel"
+              onClick={cancel}
+              disabled={isConfirming}
+            >
+              <span>Cancel</span>
+              <kbd>Esc</kbd>
+            </button>
+            <button
+              type="button"
+              className="modal-confirm"
+              onClick={confirmAnyway}
+              disabled={isConfirming}
+            >
+              <span>{isConfirming ? "Adding..." : "Add anyway"}</span>
+              <CornerDownLeft size={17} strokeWidth={2} aria-hidden="true" />
+            </button>
+          </div>
         </Modal>
       )}
     </>

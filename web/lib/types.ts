@@ -22,7 +22,6 @@ export interface Resource {
   createdAt: string;
   submittedBy?: User;
   reactions: Reaction[];
-  confirmDuplicate?: boolean;
 }
 
 export interface AuthState {
