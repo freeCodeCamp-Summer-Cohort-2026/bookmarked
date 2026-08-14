@@ -120,12 +120,12 @@ export default function Feed({ auth, socket }: FeedProps) {
       </div>
 
       {error && <p className="error">{error}</p>}
-      {loading && <p className="hint">Loading resources...</p>}
+      {loading && <p className="hint">Getting resources ready....</p>}
       {!loading && resources.length === 0 && (
         <p className="hint">
           {mineOnly
             ? "You haven't submitted any resources yet."
-            : "No resources yet."}
+            : "No resources found yet. Be first to create one."}
         </p>
       )}
 
