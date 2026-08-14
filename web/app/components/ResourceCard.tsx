@@ -276,7 +276,7 @@ export default function ResourceCard({
       )}
 
       {resource.description && (
-        <p className="resource-description">
+        <div className="resource-description">
           {resource.description.length && !isDescShortened ? (
             <div className="resource-description-row">
               <div className="resource-description-text">
@@ -308,7 +308,7 @@ export default function ResourceCard({
               </button>
             </div>
           )}
-        </p>
+        </div>
       )}
 
       <div className="resource-card-toolbar">
