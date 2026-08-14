@@ -103,6 +103,44 @@ setError(err instanceof Error ? err.message: "Something went wrong");
     }
   }
 
+  const correctRelativeTimeFormat = (inputString: Date | string) => {
+    const date = new Date(inputString);
+    
+    const now = new Date();
+
+    const diffInMs = now.getTime() - date.getTime();
+
+    const diffInSeconds = diffInMs / 1000;
+    if (diffInSeconds < 60) {
+      return "just now";
+    }
+
+    const diffInMinutes = diffInSeconds / 60;
+    if (diffInMinutes < 1) {
+      return "just now";
+    }
+
+    if (diffInMinutes < 60) {
+      const roundedMinutes = Math.round(diffInMinutes);
+      return `${roundedMinutes} minute${roundedMinutes === 1 ? "" : "s"} ago`;
+    }
+
+    const diffInHours = diffInMinutes / 60;
+    if (diffInHours < 24) {
+      const roundedHours = Math.round(diffInHours);
+      return `${roundedHours} hour${roundedHours === 1 ? "" : "s"} ago`;
+    }
+
+    const diffInDays = diffInHours / 24;
+    if (diffInDays < 7) {
+      const roundedDays = Math.round(diffInDays);
+      return `${roundedDays} day${roundedDays === 1 ? "" : "s"} ago`;
+    }
+
+    // fallback to full date
+    return date.toLocaleString("en-US");
+  }
+
   async function handleDelete() {
     if (!auth || !canDelete) return;
 
@@ -201,7 +239,7 @@ setError(err instanceof Error ? err.message: "Something went wrong");
         <a className="resource-title-details" href={`/${resource.id}`}>
           View Details
         </a>
-        <time>{new Date(resource.createdAt).toLocaleString()}</time>
+        <time>{correctRelativeTimeFormat(resource.createdAt)}</time>
         <div className="actions">
           {canDelete && (
           <button
