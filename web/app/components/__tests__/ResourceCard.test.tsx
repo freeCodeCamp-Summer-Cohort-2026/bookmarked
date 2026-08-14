@@ -168,6 +168,8 @@ describe("ResourceCard", () => {
    it("shows the report button when logged in", () => {
   render(<ResourceCard resource={resource} auth={auth} onUpdated={() => {}} onDeleted={() => {}} />);
 
-  expect(screen.getByText("Report broken link")).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Report broken link" }),
+  ).toBeInTheDocument();
 });
 });

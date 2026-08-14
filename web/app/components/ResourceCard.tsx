@@ -1,7 +1,25 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { addReaction, deleteResource, reportResource, updateResource } from "@/lib/api";
+import {
+  CalendarDays,
+  Check,
+  CircleCheck,
+  Copy,
+  ExternalLink,
+  Link2Off,
+  Pencil,
+  Save,
+  Trash2,
+  UserRound,
+  X,
+} from "lucide-react";
+import {
+  addReaction,
+  deleteResource,
+  reportResource,
+  updateResource,
+} from "@/lib/api";
 import { AuthState, Reaction, Resource } from "@/lib/types";
 
 // Starter emoji set - deliberately small. See the "add another reaction
@@ -32,6 +50,7 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
   const [reported, setReported] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editTitle, setEditTitle] = useState(resource.title);
   const [editUrl, setEditUrl] = useState(resource.url);
   const [editDescription, setEditDescription] = useState(resource.description);
@@ -53,6 +72,7 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
 
     const tags = editTagsInput.split(",").map((t) => t.trim()).filter(Boolean);
 
+    setIsSaving(true);
     try {
       const { resource: updated } = await updateResource(
         resource.id,
@@ -63,21 +83,22 @@ export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: R
       setIsEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsSaving(false);
     }
   }
 
-async function handleReport() {
-if(!auth) return;
-setError(null);
-try{
-const {resource: updated} =await reportResource(resource.id,auth.token);
-onUpdated(updated);
-setReported(true);
-}catch(err){
-setError(err instanceof Error ? err.message: "Something went wrong");
-}
-
-}
+  async function handleReport() {
+    if (!auth) return;
+    setError(null);
+    try {
+      const { resource: updated } = await reportResource(resource.id, auth.token);
+      onUpdated(updated);
+      setReported(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
 
   async function handleCopyLink() {
     try {
@@ -123,36 +144,53 @@ setError(err instanceof Error ? err.message: "Something went wrong");
 
   if (isEditing) {
     return (
-      <article className="resource-card">
-        <form className="resource-form" onSubmit={handleEditSubmit}>
+      <article className="resource-card resource-card-editing">
+        <form className="resource-form resource-edit-form" onSubmit={handleEditSubmit}>
           <input
             type="text"
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
             maxLength={200}
+            aria-label="Resource title"
             required
           />
           <input
             type="text"
             value={editUrl}
             onChange={(e) => setEditUrl(e.target.value)}
+            aria-label="Resource URL"
             required
           />
           <textarea
             value={editDescription}
             onChange={(e) => setEditDescription(e.target.value)}
             maxLength={1000}
+            aria-label="Resource description"
           />
           <input
             type="text"
             value={editTagsInput}
             onChange={(e) => setEditTagsInput(e.target.value)}
             placeholder="Tags, comma separated"
+            aria-label="Resource tags"
           />
           <div className="edit-actions">
-            <button type="submit">Save</button>
-            <button type="button" onClick={() => setIsEditing(false)}>
+            <button
+              type="button"
+              className="edit-cancel-button"
+              onClick={() => setIsEditing(false)}
+              disabled={isSaving}
+            >
+              <X size={16} aria-hidden="true" />
               Cancel
+            </button>
+            <button
+              type="submit"
+              className="edit-save-button"
+              disabled={isSaving}
+            >
+              <Save size={16} aria-hidden="true" />
+              {isSaving ? "Saving..." : "Save changes"}
             </button>
           </div>
           {error && <p className="error">{error}</p>}
@@ -163,28 +201,48 @@ setError(err instanceof Error ? err.message: "Something went wrong");
 
   return (
     <article className="resource-card">
-      <header>
-        <span className="resource-title">
-          <a href={resource.url} target="_blank" rel="noreferrer noopener">
-            {resource.title}
-          </a>
-        </span>
-        <span className="author">
-          {resource.submittedBy?.displayName || "Unknown"}
-        </span>
-        <button
-          type="button"
-          className="copy-link-button"
-          onClick={handleCopyLink}
-        >
-          {copied ? "Copied!" : "Copy link"}
-        </button>
-        {isOwner && (
-          <button type="button" className="edit-button" onClick={startEditing}>
-            Edit
+      <header className="resource-card-header">
+        <div className="resource-heading">
+          <h3 className="resource-title">
+            <a href={resource.url} target="_blank" rel="noreferrer noopener">
+              {resource.title}
+            </a>
+          </h3>
+          <span className="resource-author">
+            <UserRound size={14} aria-hidden="true" />
+            <span className="author">
+              {resource.submittedBy?.displayName || "Unknown"}
+            </span>
+          </span>
+        </div>
+        <div className="resource-card-controls">
+          <button
+            type="button"
+            className={`card-icon-button${copied ? " card-icon-button-success" : ""}`}
+            onClick={handleCopyLink}
+            aria-label={copied ? "Link copied" : "Copy link"}
+            title={copied ? "Link copied" : "Copy link"}
+          >
+            {copied ? (
+              <Check size={17} aria-hidden="true" />
+            ) : (
+              <Copy size={17} aria-hidden="true" />
+            )}
           </button>
-        )}
+          {isOwner && (
+            <button
+              type="button"
+              className="card-icon-button"
+              onClick={startEditing}
+              aria-label="Edit resource"
+              title="Edit resource"
+            >
+              <Pencil size={17} aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </header>
+
       {resource.tags?.length > 0 && (
         <div className="tags">
           {resource.tags.map((tag) => (
@@ -194,25 +252,12 @@ setError(err instanceof Error ? err.message: "Something went wrong");
           ))}
         </div>
       )}
+
       {resource.description && (
         <p className="resource-description">{resource.description}</p>
       )}
-      <footer>
-        <a className="resource-title-details" href={`/${resource.id}`}>
-          View Details
-        </a>
-        <time>{new Date(resource.createdAt).toLocaleString()}</time>
-        <div className="actions">
-          {canDelete && (
-          <button
-            type="button"
-            className="delete-button"
-            onClick={handleDelete}
-          >
-            Delete
-          </button>
-        )}
 
+      <div className="resource-card-toolbar">
         <div className="reactions">
           {Object.entries(reactionGroups).map(([emoji, count]) => (
             <span key={emoji} className="reaction-count">
@@ -226,19 +271,60 @@ setError(err instanceof Error ? err.message: "Something went wrong");
                 type="button"
                 className="reaction-button"
                 onClick={() => handleReact(emoji)}
+                title={`React with ${emoji}`}
               >
                 {emoji}
               </button>
             ))}
         </div>
+
+        <div className="resource-card-controls">
+          {auth && (
+            <button
+              type="button"
+              className={`card-icon-button${reported ? " card-icon-button-success" : ""}`}
+              onClick={handleReport}
+              disabled={reported}
+              aria-label={reported ? "Broken link reported" : "Report broken link"}
+              title={reported ? "Broken link reported" : "Report broken link"}
+            >
+              {reported ? (
+                <CircleCheck size={17} aria-hidden="true" />
+              ) : (
+                <Link2Off size={17} aria-hidden="true" />
+              )}
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              className="card-icon-button card-icon-button-danger"
+              onClick={handleDelete}
+              aria-label="Delete"
+              title="Delete resource"
+            >
+              <Trash2 size={17} aria-hidden="true" />
+            </button>
+          )}
         </div>
-        {auth && (
-  <button type="button" onClick={handleReport} disabled={reported}>
-    {reported ? "Reported" : "Report broken link"}
-  </button>
-)}
+      </div>
+
+      <footer className="resource-card-footer">
+        <time dateTime={resource.createdAt}>
+          <CalendarDays size={14} aria-hidden="true" />
+          {new Date(resource.createdAt).toLocaleString()}
+        </time>
+        <a
+          className="resource-details-link"
+          href={`/${resource.id}`}
+          aria-label="View Details"
+          title="View details"
+        >
+          <ExternalLink size={15} aria-hidden="true" />
+        </a>
       </footer>
-      {error && <p className="error">{error}</p>}
+
+      {error && <p className="error resource-card-error">{error}</p>}
     </article>
   );
 }
