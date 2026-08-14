@@ -51,44 +51,6 @@ export default function ResourceCard({ resource, auth, onUpdated }: ResourceCard
     }
   }
 
-  const correctRelativeTimeFormat = (inputString: Date | string) => {
-    const date = new Date(inputString);
-    
-    const now = new Date();
-
-    const diffInMs = now.getTime() - date.getTime();
-
-    const diffInSeconds = diffInMs / 1000;
-    if (diffInSeconds < 60) {
-      return "just now";
-    }
-
-    const diffInMinutes = diffInSeconds / 60;
-    if (diffInMinutes < 1) {
-      return "just now";
-    }
-
-    if (diffInMinutes < 60) {
-      const roundedMinutes = Math.round(diffInMinutes);
-      return `${roundedMinutes} minute${roundedMinutes === 1 ? "" : "s"} ago`;
-    }
-
-    const diffInHours = diffInMinutes / 60;
-    if (diffInHours < 24) {
-      const roundedHours = Math.round(diffInHours);
-      return `${roundedHours} hour${roundedHours === 1 ? "" : "s"} ago`;
-    }
-
-    const diffInDays = diffInHours / 24;
-    if (diffInDays < 7) {
-      const roundedDays = Math.round(diffInDays);
-      return `${roundedDays} day${roundedDays === 1 ? "" : "s"} ago`;
-    }
-
-    // fallback to full date
-    return date.toLocaleString("en-US");
-  }
-
   return (
     <article className="resource-card">
       <header>
@@ -119,8 +81,7 @@ export default function ResourceCard({ resource, auth, onUpdated }: ResourceCard
       )}
       {resource.description && <p className="resource-description">{resource.description}</p>}
       <footer>
-        {/* <time>{new Date(resource.createdAt).toLocaleString()}!</time> */}
-        <time>{correctRelativeTimeFormat(resource.createdAt)}</time>
+        <time>{new Date(resource.createdAt).toLocaleString()}!</time>
         <div className="reactions">
           {Object.entries(reactionGroups).map(([emoji, count]) => (
             <span key={emoji} className="reaction-count">
