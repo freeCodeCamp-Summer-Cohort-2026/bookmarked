@@ -16,26 +16,26 @@ async function registerAndLogin(email: string) {
 }
 
 async function createModeratorAndLogin() {
-  const passwordHash = await hashPassword("password123");
+	const passwordHash = await hashPassword("password123");
 
-  await prisma.user.create({
-    data: {
-      email: "moderator@example.com",
-      displayName: "Moderator",
-      passwordHash,
-      role: "moderator",
-    },
-  });
+	await prisma.user.create({
+		data: {
+			email: "moderator@example.com",
+			displayName: "Moderator",
+			passwordHash,
+			role: "moderator",
+		},
+	});
 
-  const res = await request(app).post("/api/auth/login").send({
-    email: "moderator@example.com",
-    password: "password123",
-  });
+	const res = await request(app).post("/api/auth/login").send({
+		email: "moderator@example.com",
+		password: "password123",
+	});
 
-  return {
-    token: res.body.token,
-    user: res.body.user,
-  };
+	return {
+		token: res.body.token,
+		user: res.body.user,
+	};
 }
 
 afterEach(async () => {
@@ -161,106 +161,106 @@ describe("GET /api/resources", () => {
 });
 
 describe("DELETE /api/resources/:id", () => {
-  it("allows a member to delete their own resource", async () => {
-    const { token } = await registerAndLogin("owner-delete@example.com");
+	it("allows a member to delete their own resource", async () => {
+		const { token } = await registerAndLogin("owner-delete@example.com");
 
-    const createRes = await request(app)
-      .post("/api/resources")
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        title: "My Resource",
-        url: "https://example.com",
-      });
+		const createRes = await request(app)
+			.post("/api/resources")
+			.set("Authorization", `Bearer ${token}`)
+			.send({
+				title: "My Resource",
+				url: "https://example.com",
+			});
 
-    const resourceId = createRes.body.resource.id;
+		const resourceId = createRes.body.resource.id;
 
-    const deleteRes = await request(app)
-      .delete(`/api/resources/${resourceId}`)
-      .set("Authorization", `Bearer ${token}`);
+		const deleteRes = await request(app)
+			.delete(`/api/resources/${resourceId}`)
+			.set("Authorization", `Bearer ${token}`);
 
     expect(deleteRes.status).toBe(200);
-    expect(deleteRes.body.message).toBe("Resource deleted successfully");
+		expect(deleteRes.body.message).toBe("Resource deleted successfully");
 
-    const getRes = await request(app).get(`/api/resources/${resourceId}`);
+		const getRes = await request(app).get(`/api/resources/${resourceId}`);
 
-    expect(getRes.status).toBe(404);
-  });
+		expect(getRes.status).toBe(404);
+	});
 
-  it("prevents a member from deleting another user's resource", async () => {
-    const { token: ownerToken } = await registerAndLogin(
-      "resource-owner@example.com",
-    );
+	it("prevents a member from deleting another user's resource", async () => {
+		const { token: ownerToken } = await registerAndLogin(
+			"resource-owner@example.com",
+		);
 
-    const { token: otherToken } = await registerAndLogin(
-      "resource-other@example.com",
-    );
+		const { token: otherToken } = await registerAndLogin(
+			"resource-other@example.com",
+		);
 
-    const createRes = await request(app)
-      .post("/api/resources")
-      .set("Authorization", `Bearer ${ownerToken}`)
-      .send({
-        title: "Someone Else's Resource",
-        url: "https://example.com",
-      });
+		const createRes = await request(app)
+			.post("/api/resources")
+			.set("Authorization", `Bearer ${ownerToken}`)
+			.send({
+				title: "Someone Else's Resource",
+				url: "https://example.com",
+			});
 
-    const resourceId = createRes.body.resource.id;
+		const resourceId = createRes.body.resource.id;
 
-    const deleteRes = await request(app)
-      .delete(`/api/resources/${resourceId}`)
-      .set("Authorization", `Bearer ${otherToken}`);
+		const deleteRes = await request(app)
+			.delete(`/api/resources/${resourceId}`)
+			.set("Authorization", `Bearer ${otherToken}`);
 
-    expect(deleteRes.status).toBe(403);
-    expect(deleteRes.body.error).toBe(
-      "You can only delete your own resources",
-    );
+		expect(deleteRes.status).toBe(403);
+		expect(deleteRes.body.error).toBe(
+			"You can only delete your own resources",
+		);
   });
 
   it("allows a moderator to delete another user's resource", async () => {
-    const { token: ownerToken } = await registerAndLogin(
-      "resource-owner@example.com",
-    );
+		const { token: ownerToken } = await registerAndLogin(
+			"resource-owner@example.com",
+		);
 
-    const { token: moderatorToken } = await createModeratorAndLogin();
+		const { token: moderatorToken } = await createModeratorAndLogin();
 
-    const createRes = await request(app)
-      .post("/api/resources")
-      .set("Authorization", `Bearer ${ownerToken}`)
-      .send({
-        title: "Resource owned by a member",
-        url: "https://example.com",
-      });
+		const createRes = await request(app)
+			.post("/api/resources")
+			.set("Authorization", `Bearer ${ownerToken}`)
+			.send({
+				title: "Resource owned by a member",
+				url: "https://example.com",
+			});
 
-    const resourceId = createRes.body.resource.id;
+		const resourceId = createRes.body.resource.id;
 
-    const deleteRes = await request(app)
-      .delete(`/api/resources/${resourceId}`)
-      .set("Authorization", `Bearer ${moderatorToken}`);
+		const deleteRes = await request(app)
+			.delete(`/api/resources/${resourceId}`)
+			.set("Authorization", `Bearer ${moderatorToken}`);
 
-    expect(deleteRes.status).toBe(200);
-    expect(deleteRes.body.message).toBe("Resource deleted successfully");
+		expect(deleteRes.status).toBe(200);
+		expect(deleteRes.body.message).toBe("Resource deleted successfully");
 
-    const getRes = await request(app).get(`/api/resources/${resourceId}`);
+		const getRes = await request(app).get(`/api/resources/${resourceId}`);
 
-    expect(getRes.status).toBe(404);
+		expect(getRes.status).toBe(404);
   });
 
-  it("rejects unauthenticated resource deletion", async () => {
-    const res = await request(app).delete("/api/resources/non-existent-id");
+	it("rejects unauthenticated resource deletion", async () => {
+		const res = await request(app).delete("/api/resources/non-existent-id");
 
-    expect(res.status).toBe(401);
-  });
+		expect(res.status).toBe(401);
+	});
 
-  it("returns 404 when the resource does not exist", async () => {
-    const { token } = await registerAndLogin(
-      "missing-resource@example.com",
-    );
+	it("returns 404 when the resource does not exist", async () => {
+		const { token } = await registerAndLogin(
+			"missing-resource@example.com",
+		);
 
-    const res = await request(app)
-      .delete("/api/resources/non-existent-id")
-      .set("Authorization", `Bearer ${token}`);
+		const res = await request(app)
+			.delete("/api/resources/non-existent-id")
+			.set("Authorization", `Bearer ${token}`);
 
-    expect(res.status).toBe(404);
-  });
+		expect(res.status).toBe(404);
+	});
 });
 
 describe("DELETE /api/resources/:id/reactions/:reactionId", () => {
@@ -315,8 +315,8 @@ describe("DELETE /api/resources/:id/reactions/:reactionId", () => {
   });
 });
 
-describe("POST /api/resources/:id/report", () => {
-  it("it allows a user to flag a broken url", async () => {
+describe("POST /api/resources/:id/report", ()=> {
+  it("it allows a user to flag a broken url", async ()=> {
     const { token } = await registerAndLogin("reporter@example.com");
 
     const createRes = await request(app)
@@ -326,12 +326,12 @@ describe("POST /api/resources/:id/report", () => {
 
     const resourceId = createRes.body.resource.id;
 
-    const res = await request(app)
+    const res=await request(app)
       .post(`/api/resources/${resourceId}/report`)
       .set("Authorization", `Bearer ${token}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body.resource.reportCount).toBe(1)
+      expect(res.status).toBe(200);
+      expect(res.body.resource.reportCount).toBe(1)
 
   })
 })

@@ -20,12 +20,8 @@ router.get("/", async (req: Request, res: Response) => {
 
     const resources = await prisma.resource.findMany({
       where: {
-        ...(typeof tag === "string"
-          ? { tags: { has: tag.trim().toLowerCase() } }
-          : {}),
-        ...(typeof submittedBy === "string"
-          ? { submittedById: submittedBy }
-          : {}),
+        ...(typeof tag === "string" ? { tags: { has: tag.trim().toLowerCase() } } : {}),
+        ...(typeof submittedBy === "string" ? { submittedById: submittedBy } : {}),
       },
       orderBy: { createdAt: "desc" },
       include: resourceInclude,
@@ -61,46 +57,42 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
     const { title, url, description, tags, confirmDuplicate } = req.body;
 
     if (!title || !title.trim()) {
-      return res
-        .status(400)
-        .json({ error: "title is required and cannot be empty" });
+      return res.status(400).json({ error: "title is required and cannot be empty" });
     }
 
     if (!url || !url.trim()) {
-      return res
-        .status(400)
-        .json({ error: "url is required and cannot be empty" });
+      return res.status(400).json({ error: "url is required and cannot be empty" });
     }
 
     const normalizedUrl = url.trim();
 
-    if (
-      !normalizedUrl.startsWith("http://") &&
-      !normalizedUrl.startsWith("https://")
-    ) {
-      return res
-        .status(400)
-        .json({ error: "url must start with http:// or https://" });
-    }
+	  if (
+		!normalizedUrl.startsWith("http://") &&
+		!normalizedUrl.startsWith("https://")
+	  ) {
+		return res
+			.status(400)
+			.json({ error: "url must start with http:// or https://" });
+	  }
 
     const normalizedTags: string[] = Array.isArray(tags)
       ? tags.map((tag: string) => tag.trim().toLowerCase()).filter(Boolean)
       : [];
 
-    const doesDuplicate = await prisma.resource.findFirst({
+    const duplicate = await prisma.resource.findFirst({
       where: { url: normalizedUrl },
     });
-    if (doesDuplicate && !confirmDuplicate) {
+    if (duplicate && !confirmDuplicate) {
       return res.status(409).json({
-        detail:
-          "A resource with this URL already exists. Do you still want to add it?",
+        detail: "A resource with this URL already exists. Do you still want to add it?",
         duplicate: {
-          id: doesDuplicate.id,
-          title: doesDuplicate.title,
-          url: doesDuplicate.url,
+          id: duplicate.id,
+          title: duplicate.title,
+          url: duplicate.url,
         },
       });
     }
+
     const resource = await prisma.resource.create({
       data: {
         submittedById: req.user!.id,
@@ -119,79 +111,63 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 });
 
 // POST /api/resources/:id/reactions
-router.post(
-  "/:id/reactions",
-  requireAuth,
-  async (req: Request, res: Response) => {
-    try {
-      const { emoji } = req.body;
+router.post("/:id/reactions", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { emoji } = req.body;
 
-      if (!emoji || !emoji.trim()) {
-        return res.status(400).json({ error: "emoji is required" });
-      }
-
-      const resource = await prisma.resource.findUnique({
-        where: { id: req.params.id },
-      });
-      if (!resource) {
-        return res.status(404).json({ error: "Resource not found" });
-      }
-
-      const alreadyReacted = await prisma.reaction.findUnique({
-        where: {
-          resourceId_userId_emoji: {
-            resourceId: resource.id,
-            userId: req.user!.id,
-            emoji,
-          },
-        },
-      });
-      if (alreadyReacted) {
-        return res
-          .status(409)
-          .json({ error: "You already reacted with that emoji" });
-      }
-
-      await prisma.reaction.create({
-        data: { emoji, resourceId: resource.id, userId: req.user!.id },
-      });
-
-      const updated = await prisma.resource.findUnique({
-        where: { id: resource.id },
-        include: resourceInclude,
-      });
-      req.app.get("io")?.emit("resource:updated", updated);
-      return res.status(201).json({ resource: updated });
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid resource id" });
+    if (!emoji || !emoji.trim()) {
+      return res.status(400).json({ error: "emoji is required" });
     }
-  },
-);
+
+    const resource = await prisma.resource.findUnique({ where: { id: req.params.id } });
+    if (!resource) {
+      return res.status(404).json({ error: "Resource not found" });
+    }
+
+    const alreadyReacted = await prisma.reaction.findUnique({
+      where: {
+        resourceId_userId_emoji: {
+          resourceId: resource.id,
+          userId: req.user!.id,
+          emoji,
+        },
+      },
+    });
+    if (alreadyReacted) {
+      return res.status(409).json({ error: "You already reacted with that emoji" });
+    }
+
+    await prisma.reaction.create({
+      data: { emoji, resourceId: resource.id, userId: req.user!.id },
+    });
+
+    const updated = await prisma.resource.findUnique({
+      where: { id: resource.id },
+      include: resourceInclude,
+    });
+    req.app.get("io")?.emit("resource:updated", updated);
+    return res.status(201).json({ resource: updated });
+  } catch (err) {
+    return res.status(400).json({ error: "Invalid resource id" });
+  }
+});
+
 
 // PATCH /api/resources/:id
 router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
-    const resource = await prisma.resource.findUnique({
-      where: { id: req.params.id },
-    });
+    const resource = await prisma.resource.findUnique({ where: { id: req.params.id } });
 
     if (!resource) {
       return res.status(404).json({ error: "Resource not found" });
     }
 
     if (resource.submittedById !== req.user!.id) {
-      return res
-        .status(403)
-        .json({ error: "You can only edit your own resource" });
+      return res.status(403).json({ error: "You can only edit your own resource" });
     }
 
     const { title, url, description, tags } = req.body;
-    const data: {
-      title?: string;
-      url?: string;
-      description?: string;
-      tags?: string[];
-    } = {};
+    const data: { title?: string; url?: string; description?: string; tags?: string[] } = {};
 
     if (title !== undefined) {
       if (!title.trim()) {
@@ -202,13 +178,8 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
 
     if (url !== undefined) {
       const normalizedUrl = url.trim();
-      if (
-        !normalizedUrl.startsWith("http://") &&
-        !normalizedUrl.startsWith("https://")
-      ) {
-        return res
-          .status(400)
-          .json({ error: "url must start with http:// or https://" });
+      if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+        return res.status(400).json({ error: "url must start with http:// or https://" });
       }
       data.url = normalizedUrl;
     }
@@ -236,12 +207,11 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+
 // DELETE /api/resources/:id
 router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
-    const resource = await prisma.resource.findUnique({
-      where: { id: req.params.id },
-    });
+    const resource = await prisma.resource.findUnique({ where: { id: req.params.id } });
 
     if (!resource) {
       return res.status(404).json({ error: "Resource not found" });
@@ -251,9 +221,7 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
     const isModerator = req.user!.role === "moderator";
 
     if (!isOwner && !isModerator) {
-      return res
-        .status(403)
-        .json({ error: "You can only delete your own resources" });
+      return res.status(403).json({ error: "You can only delete your own resources" });
     }
 
     await prisma.resource.delete({ where: { id: resource.id } });
@@ -265,65 +233,57 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
 });
 
 // DELETE /api/resources/:id/reactions/:reactionId
-router.delete(
-  "/:id/reactions/:reactionId",
-  requireAuth,
-  async (req: Request, res: Response) => {
-    try {
-      const reaction = await prisma.reaction.findUnique({
-        where: { id: req.params.reactionId },
-      });
-      if (!reaction || reaction.resourceId !== req.params.id) {
-        return res.status(404).json({ error: "Reaction not found" });
-      }
-
-      if (reaction.userId !== req.user!.id) {
-        return res
-          .status(403)
-          .json({ error: "You can only remove your own reactions" });
-      }
-
-      await prisma.reaction.delete({ where: { id: reaction.id } });
-
-      const updated = await prisma.resource.findUnique({
-        where: { id: req.params.id },
-        include: resourceInclude,
-      });
-
-      if (!updated) {
-        return res.status(404).json({ error: "Resource not found" });
-      }
-
-      req.app.get("io")?.emit("resource:updated", updated);
-      return res.json({ resource: updated });
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid resource or reaction id" });
-    }
-  },
-);
-
-// POST /api/resources/:id/report
-router.post("/:id/report", requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id/reactions/:reactionId", requireAuth, async (req: Request, res: Response) => {
   try {
-    const resource = await prisma.resource.findUnique({
+    const reaction = await prisma.reaction.findUnique({ where: { id: req.params.reactionId } });
+    if (!reaction || reaction.resourceId !== req.params.id) {
+      return res.status(404).json({ error: "Reaction not found" });
+    }
+
+    if (reaction.userId !== req.user!.id) {
+      return res.status(403).json({ error: "You can only remove your own reactions" });
+    }
+
+    await prisma.reaction.delete({ where: { id: reaction.id } });
+
+    const updated = await prisma.resource.findUnique({
       where: { id: req.params.id },
+      include: resourceInclude,
     });
+
+    if (!updated) {
+      return res.status(404).json({ error: "Resource not found" });
+    }
+
+    req.app.get("io")?.emit("resource:updated", updated);
+    return res.json({ resource: updated });
+  } catch (err) {
+    return res.status(400).json({ error: "Invalid resource or reaction id" });
+  }
+});
+
+// POST /api/resources/:id/repor
+router.post("/:id/report", requireAuth, async (req: Request, res: Response)=>{
+  try{
+
+
+    const resource = await prisma.resource.findUnique({ where: { id: req.params.id } });
     if (!resource) {
       return res.status(404).json({ error: "Resource not found" });
     }
 
-    const update = await prisma.resource.update({
-      where: {
-        id: resource.id,
-      },
-      data: { reportCount: { increment: 1 } },
-      include: resourceInclude,
-    });
-
-    return res.status(200).json({ resource: update });
-  } catch (err) {
-    return res.status(400).json({ error: "Invalid resource id" });
-  }
+    const update = await prisma.resource.update({where : {
+      id: resource.id
+    },
+  data: { reportCount: {increment: 1}},
+  include: resourceInclude,
 });
+
+return res.status(200).json({ resource: update });
+
+  }catch (err){
+ return res.status(400).json({ error: "Invalid resource id" });
+  }
+})
 
 export default router;
