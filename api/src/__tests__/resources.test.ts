@@ -1,16 +1,43 @@
 import request from "supertest";
 import { createApp } from "../app";
 import { clearTestDB, disconnectTestDB } from "./setup";
+import { prisma } from "../db";
+import { hashPassword } from "../utils/password";
 
 const app = createApp();
 
 async function registerAndLogin(email: string) {
-  const res = await request(app).post("/api/auth/register").send({
-    email,
-    password: "password123",
-    displayName: email.split("@")[0],
-  });
+  const res = await request(app)
+    .post("/api/auth/register")
+    .send({
+      email,
+      password: "password123",
+      displayName: email.split("@")[0],
+    });
   return { token: res.body.token, user: res.body.user };
+}
+
+async function createModeratorAndLogin() {
+  const passwordHash = await hashPassword("password123");
+
+  await prisma.user.create({
+    data: {
+      email: "moderator@example.com",
+      displayName: "Moderator",
+      passwordHash,
+      role: "moderator",
+    },
+  });
+
+  const res = await request(app).post("/api/auth/login").send({
+    email: "moderator@example.com",
+    password: "password123",
+  });
+
+  return {
+    token: res.body.token,
+    user: res.body.user,
+  };
 }
 
 afterEach(async () => {
@@ -28,12 +55,61 @@ describe("POST /api/resources", () => {
     const res = await request(app)
       .post("/api/resources")
       .set("Authorization", `Bearer ${token}`)
-      .send({ title: "MDN Docs", url: "https://developer.mozilla.org", tags: ["JS", " Beginner "] });
+      .send({
+        title: "MDN Docs",
+        url: "https://developer.mozilla.org",
+        tags: ["JS", " Beginner "],
+      });
 
     expect(res.status).toBe(201);
     expect(res.body.resource.title).toBe("MDN Docs");
     // tags should be lowercased and trimmed by the schema setter
     expect(res.body.resource.tags).toEqual(["js", "beginner"]);
+  });
+
+  it("requires confirmation before creating a duplicate URL", async () => {
+    const { token } = await registerAndLogin("duplicate@example.com");
+    const url = "https://example.com/shared";
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Existing resource", url });
+
+    const duplicateRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "My new resource",
+        url,
+        description: "Keep my submitted description",
+        tags: ["Original Tag"],
+      });
+
+    expect(duplicateRes.status).toBe(409);
+    expect(duplicateRes.body.duplicate).toMatchObject({
+      title: "Existing resource",
+      url,
+    });
+
+    const confirmedRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "My new resource",
+        url,
+        description: "Keep my submitted description",
+        tags: ["Original Tag"],
+        confirmDuplicate: true,
+      });
+
+    expect(confirmedRes.status).toBe(201);
+    expect(confirmedRes.body.resource).toMatchObject({
+      title: "My new resource",
+      url,
+      description: "Keep my submitted description",
+      tags: ["original tag"],
+    });
   });
 
   it("rejects a resource with no title", async () => {
@@ -45,6 +121,18 @@ describe("POST /api/resources", () => {
       .send({ url: "https://example.com" });
 
     expect(res.status).toBe(400);
+  });
+
+  it("rejects a resource with an invalid URL", async () => {
+    const { token } = await registerAndLogin("owner3@example.com");
+
+    const res = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Invalid URL", url: "not-a-url" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("url must start with http:// or https://");
   });
 
   it("rejects unauthenticated requests", async () => {
@@ -63,7 +151,11 @@ describe("GET /api/resources", () => {
     await request(app)
       .post("/api/resources")
       .set("Authorization", `Bearer ${token}`)
-      .send({ title: "CSS Tricks", url: "https://css-tricks.com", tags: ["css"] });
+      .send({
+        title: "CSS Tricks",
+        url: "https://css-tricks.com",
+        tags: ["css"],
+      });
 
     await request(app)
       .post("/api/resources")
@@ -75,6 +167,105 @@ describe("GET /api/resources", () => {
     expect(res.status).toBe(200);
     expect(res.body.resources).toHaveLength(1);
     expect(res.body.resources[0].title).toBe("CSS Tricks");
+  });
+});
+
+describe("DELETE /api/resources/:id", () => {
+  it("allows a member to delete their own resource", async () => {
+    const { token } = await registerAndLogin("owner-delete@example.com");
+
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "My Resource",
+        url: "https://example.com",
+      });
+
+    const resourceId = createRes.body.resource.id;
+
+    const deleteRes = await request(app)
+      .delete(`/api/resources/${resourceId}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body.message).toBe("Resource deleted successfully");
+
+    const getRes = await request(app).get(`/api/resources/${resourceId}`);
+
+    expect(getRes.status).toBe(404);
+  });
+
+  it("prevents a member from deleting another user's resource", async () => {
+    const { token: ownerToken } = await registerAndLogin(
+      "resource-owner@example.com",
+    );
+
+    const { token: otherToken } = await registerAndLogin(
+      "resource-other@example.com",
+    );
+
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({
+        title: "Someone Else's Resource",
+        url: "https://example.com",
+      });
+
+    const resourceId = createRes.body.resource.id;
+
+    const deleteRes = await request(app)
+      .delete(`/api/resources/${resourceId}`)
+      .set("Authorization", `Bearer ${otherToken}`);
+
+    expect(deleteRes.status).toBe(403);
+    expect(deleteRes.body.error).toBe("You can only delete your own resources");
+  });
+
+  it("allows a moderator to delete another user's resource", async () => {
+    const { token: ownerToken } = await registerAndLogin(
+      "resource-owner@example.com",
+    );
+
+    const { token: moderatorToken } = await createModeratorAndLogin();
+
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({
+        title: "Resource owned by a member",
+        url: "https://example.com",
+      });
+
+    const resourceId = createRes.body.resource.id;
+
+    const deleteRes = await request(app)
+      .delete(`/api/resources/${resourceId}`)
+      .set("Authorization", `Bearer ${moderatorToken}`);
+
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body.message).toBe("Resource deleted successfully");
+
+    const getRes = await request(app).get(`/api/resources/${resourceId}`);
+
+    expect(getRes.status).toBe(404);
+  });
+
+  it("rejects unauthenticated resource deletion", async () => {
+    const res = await request(app).delete("/api/resources/non-existent-id");
+
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 404 when the resource does not exist", async () => {
+    const { token } = await registerAndLogin("missing-resource@example.com");
+
+    const res = await request(app)
+      .delete("/api/resources/non-existent-id")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
   });
 });
 
@@ -127,5 +318,109 @@ describe("DELETE /api/resources/:id/reactions/:reactionId", () => {
       .set("Authorization", `Bearer ${otherToken}`);
 
     expect(deleteRes.status).toBe(403);
+  });
+});
+
+describe("POST /api/resources/:id/report", () => {
+  it("it allows a user to flag a broken url", async () => {
+    const { token } = await registerAndLogin("reporter@example.com");
+
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Reportable", url: "https://example.com" });
+
+    const resourceId = createRes.body.resource.id;
+
+    const res = await request(app)
+      .post(`/api/resources/${resourceId}/report`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.resource.reportCount).toBe(1);
+  });
+});
+
+describe("PATCH /api/resources/:id", () => {
+  it("allows the original submitter to edit their resource", async () => {
+    const { token } = await registerAndLogin("editor@example.com");
+
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Old Title", url: "https://example.com", tags: ["old"] });
+
+    const resourceId = createRes.body.resource.id;
+
+    const patchRes = await request(app)
+      .patch(`/api/resources/${resourceId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "New Title", tags: ["new"] });
+
+    expect(patchRes.status).toBe(200);
+    expect(patchRes.body.resource.title).toBe("New Title");
+    expect(patchRes.body.resource.tags).toEqual(["new"]);
+    expect(patchRes.body.resource.url).toBe("https://example.com");
+  });
+
+  it("rejects edits from a user who isn't the original submitter", async () => {
+    const { token: ownerToken } = await registerAndLogin(
+      "realowner@example.com",
+    );
+    const { token: otherToken } = await registerAndLogin(
+      "intruder@example.com",
+    );
+
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ title: "Protected", url: "https://example.com" });
+
+    const patchRes = await request(app)
+      .patch(`/api/resources/${createRes.body.resource.id}`)
+      .set("Authorization", `Bearer ${otherToken}`)
+      .send({ title: "Hijacked" });
+
+    expect(patchRes.status).toBe(403);
+  });
+
+  it("rejects unauthenticated requests", async () => {
+    const { token } = await registerAndLogin("owner4@example.com");
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "NoAuthEdit", url: "https://example.com" });
+
+    const res = await request(app)
+      .patch(`/api/resources/${createRes.body.resource.id}`)
+      .send({ title: "Should fail" });
+
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects an empty title", async () => {
+    const { token } = await registerAndLogin("owner5@example.com");
+    const createRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Valid", url: "https://example.com" });
+
+    const res = await request(app)
+      .patch(`/api/resources/${createRes.body.resource.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("404s for a nonexistent resource", async () => {
+    const { token } = await registerAndLogin("owner6@example.com");
+
+    const res = await request(app)
+      .patch("/api/resources/00000000-0000-0000-0000-000000000000")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Ghost" });
+
+    expect(res.status).toBe(404);
   });
 });

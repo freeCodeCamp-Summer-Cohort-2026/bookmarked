@@ -1,0 +1,61 @@
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 2em;
+}
+
+.error {
+  display: flex;
+  justify-self: center;
+  font-size: 1em;
+  color: red;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.container label {
+  font-size: 2em;
+}
+
+.container p span {
+  font-size: 2.5em;
+  background-color: gray;
+}
+
+.description-text {
+  font-size: 3em;
+  padding: 0;
+  margin: 0;
+  background-color: pink;
+}
+
+.resource-id {
+  display: flex;
+  align-self: flex-end;
+  font-size: 0.5em;
+}
+
+.tags-container {
+  display: flex;
+  justify-content: center;
+}
+
+.emoji-container {
+  display: flex;
+  justify-content: center;
+}
+
+h1 {
+  display: flex;
+  justify-content: center;
+}
+
+h2 {
+  display: flex;
+  justify-content: center;
+  font-size: 1em;
+}

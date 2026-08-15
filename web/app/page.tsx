@@ -6,14 +6,11 @@ import { Resource } from "@/lib/types";
 import AuthPanel from "./components/AuthPanel";
 import ResourceForm from "./components/ResourceForm";
 import Feed from "./components/Feed";
+import { useSocket } from "@/lib/useSocket";
 
 export default function HomePage() {
   const { auth, ready, signIn, signOut } = useAuth();
-  const [refreshToken, setRefreshToken] = useState(0);
-
-  function handlePosted(_resource: Resource) {
-    setRefreshToken((n) => n + 1);
-  }
+  const socket = useSocket(auth);
 
   return (
     <main className="container">
@@ -24,12 +21,12 @@ export default function HomePage() {
 
       <section>
         <h2>Share a resource</h2>
-        <ResourceForm auth={auth} onPosted={handlePosted} />
+        <ResourceForm auth={auth} />
       </section>
 
       <section>
-        <h2>Feed</h2>
-        <Feed auth={auth} refreshToken={refreshToken} />
+        <h2>My Feed</h2>
+        <Feed auth={auth} socket={socket} />
       </section>
     </main>
   );
