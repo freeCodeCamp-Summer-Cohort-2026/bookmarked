@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Socket } from "socket.io-client";
 import { listResources } from "@/lib/api";
 import { AuthState, Resource } from "@/lib/types";
+import { useReactionHistory } from "@/lib/useReactionHistory";
 import ResourceCard from "./ResourceCard";
 
 interface FeedProps {
@@ -17,6 +18,10 @@ export default function Feed({ auth, socket }: FeedProps) {
   const [mineOnly, setMineOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const {
+    history: reactionHistory,
+    recordReaction,
+  } = useReactionHistory(auth?.user.id ?? null);
 
   useEffect(() => {
     if (!auth) setMineOnly(false);
@@ -135,6 +140,8 @@ export default function Feed({ auth, socket }: FeedProps) {
             key={resource.id}
             resource={resource}
             auth={auth}
+            reactionHistory={reactionHistory}
+            onReactionSelected={recordReaction}
             onUpdated={handleReactionUpdated}
             onDeleted={handleDeleted}
           />

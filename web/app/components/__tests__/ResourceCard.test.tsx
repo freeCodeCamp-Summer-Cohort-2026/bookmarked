@@ -1,6 +1,14 @@
-import { render, screen } from "@testing-library/react";
 import ResourceCard, { groupReactions } from "../ResourceCard";
 import { AuthState, Resource } from "@/lib/types";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { addReaction } from "@/lib/api";
+
+jest.mock("@/lib/api");
 
 describe("groupReactions", () => {
   it("counts reactions by emoji", () => {
@@ -39,6 +47,12 @@ describe("ResourceCard", () => {
     submittedBy: { id: "u1", displayName: "Amina Yusuf", email: "amina@example.com", role: "member" },
     reactions: [{ id: "r1", emoji: "⭐", user: { id: "u2", displayName: "Diego", email: "d@example.com", role: "member" } }],
   };
+  const reactionHistory: string[] = [];
+  const onReactionSelected = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   const memberOwnerAuth: AuthState = {
 		token: "member-owner-token",
@@ -76,7 +90,16 @@ describe("ResourceCard", () => {
 };
 
   it("renders the resource title, author, and tags", () => {
-    render(<ResourceCard resource={resource} auth={null} onUpdated={() => {}} onDeleted={() => {}}/>);
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={null}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
+        onUpdated={() => {}}
+        onDeleted={() => {}}
+      />
+    );
 
     expect(screen.getByText("MDN Async/Await Guide")).toBeInTheDocument();
     expect(screen.getByText("Amina Yusuf")).toBeInTheDocument();
@@ -86,7 +109,14 @@ describe("ResourceCard", () => {
 
   test("navigates to the correct link when 'View Details' is clicked", () => {
     render(
-      <ResourceCard resource={resource} auth={null} onUpdated={() => {}} onDeleted={()=>{}} />,
+      <ResourceCard
+        resource={resource}
+        auth={null}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
+        onUpdated={() => {}}
+        onDeleted={()=>{}}
+      />,
     );
     expect(screen.getByRole("link", { name: "View Details" })).toHaveAttribute(
       "href",
@@ -95,7 +125,16 @@ describe("ResourceCard", () => {
   });
 
   it("does not show reaction buttons when logged out", () => {
-    render(<ResourceCard resource={resource} auth={null} onUpdated={() => {}} onDeleted={() => {}}/>);
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={null}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
+        onUpdated={() => {}}
+        onDeleted={() => {}}
+      />
+    );
 
     expect(
       screen.queryByRole("button", { name: "⭐" }),
@@ -110,6 +149,8 @@ describe("ResourceCard", () => {
 			<ResourceCard
 				resource={resource}
 				auth={memberOwnerAuth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
 				onUpdated={() => {}}
 				onDeleted={() => {}}
 			/>,
@@ -125,6 +166,8 @@ describe("ResourceCard", () => {
 			<ResourceCard
 				resource={resource}
 				auth={memberOtherAuth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
 				onUpdated={() => {}}
 				onDeleted={() => {}}
 			/>,
@@ -140,6 +183,8 @@ describe("ResourceCard", () => {
 			<ResourceCard
 				resource={resource}
 				auth={moderatorAuth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
 				onUpdated={() => {}}
 				onDeleted={() => {}}
 			/>,
@@ -155,6 +200,8 @@ describe("ResourceCard", () => {
 			<ResourceCard
 				resource={resource}
 				auth={null}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
 				onUpdated={() => {}}
 				onDeleted={() => {}}
 			/>,
@@ -166,8 +213,84 @@ describe("ResourceCard", () => {
   });
 
    it("shows the report button when logged in", () => {
-  render(<ResourceCard resource={resource} auth={auth} onUpdated={() => {}} onDeleted={() => {}} />);
+  render(
+    <ResourceCard
+      resource={resource}
+      auth={auth}
+      reactionHistory={reactionHistory}
+      onReactionSelected={onReactionSelected}
+      onUpdated={() => {}}
+      onDeleted={() => {}}
+    />,
+  );
 
   expect(screen.getByText("Report broken link")).toBeInTheDocument();
 });
+  it("records a reaction after a successful submission", async () => {
+    const handleUpdated = jest.fn();
+    const handleReactionSelected = jest.fn();
+
+    (addReaction as jest.Mock).mockResolvedValue({
+      resource,
+    });
+
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={auth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={handleReactionSelected}
+        onUpdated={handleUpdated}
+        onDeleted={() => {}}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "⭐" }),
+    );
+
+    await waitFor(() => {
+      expect(addReaction).toHaveBeenCalledWith(
+        { resourceId: resource.id, emoji: "⭐" },
+        auth.token,
+      );
+      expect(handleUpdated).toHaveBeenCalledWith(resource);
+      expect(handleReactionSelected).toHaveBeenCalledWith("⭐");
+    });
+
+    expect(handleReactionSelected).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not update state after a failed emoji submission", async () => {
+    const handleUpdated = jest.fn();
+    const handleReactionSelected = jest.fn();
+
+    (addReaction as jest.Mock).mockRejectedValue(
+      new Error("Submission failed"),
+    );
+
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={auth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={handleReactionSelected}
+        onUpdated={handleUpdated}
+        onDeleted={() => {}}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "⭐" }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Submission failed"),
+      ).toBeInTheDocument();
+    });
+
+    expect(handleUpdated).not.toHaveBeenCalled();
+    expect(handleReactionSelected).not.toHaveBeenCalled();
+  });
 });

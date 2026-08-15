@@ -4,12 +4,18 @@ import { Resource } from "@/lib/types";
 import { useAuth } from "@/lib/useAuth";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { groupReactions, REACTION_OPTIONS } from "../../components/ResourceCard";
+import { groupReactions } from "../../components/ResourceCard";
+import ReactionPicker from "../../components/ReactionPicker";
+import { useReactionHistory } from "@/lib/useReactionHistory";
 import "./resource-page.css";
 
 export default function Page() {
   const router = useRouter();
   const { auth } = useAuth();
+  const {
+    history: reactionHistory,
+    recordReaction,
+  } = useReactionHistory(auth?.user.id ?? null);
   const { id } = useParams<{ id: string }>();
   const [resource, setResource] = useState<Resource | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +56,7 @@ export default function Page() {
         auth.token,
       );
       setResource(updated);
+      recordReaction(emoji);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
@@ -112,17 +119,12 @@ export default function Page() {
               {emoji} {count}
             </span>
           ))}
-          {auth &&
-            REACTION_OPTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                className="reaction-button"
-                onClick={() => handleReact(emoji)}
-              >
-                {emoji}
-              </button>
-            ))}
+          {auth && (
+            <ReactionPicker
+              history={reactionHistory}
+              onSelect={handleReact}
+            />
+          )}
         </div>
       </div>
 

@@ -3,10 +3,7 @@
 import { FormEvent, useState } from "react";
 import { addReaction, deleteResource, reportResource, updateResource } from "@/lib/api";
 import { AuthState, Reaction, Resource } from "@/lib/types";
-
-// Starter emoji set - deliberately small. See the "add another reaction
-// emoji option" good-first-issue for extending this.
-export const REACTION_OPTIONS = ["⭐", "🔖"];
+import ReactionPicker from "./ReactionPicker";
 
 export function groupReactions(reactions: Reaction[]): Record<string, number> {
   const groups: Record<string, number> = {};
@@ -19,11 +16,20 @@ export function groupReactions(reactions: Reaction[]): Record<string, number> {
 interface ResourceCardProps {
   resource: Resource;
   auth: AuthState | null;
+  reactionHistory: string[];
   onUpdated: (resource: Resource) => void;
+  onReactionSelected: (emoji: string) => void;
   onDeleted: (resourceId: string) => void;
 }
 
-export default function ResourceCard({ resource, auth, onUpdated, onDeleted }: ResourceCardProps) {
+export default function ResourceCard({
+  resource,
+  auth,
+  reactionHistory,
+  onUpdated,
+  onReactionSelected,
+  onDeleted,
+}: ResourceCardProps) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const reactionGroups = groupReactions(resource.reactions || []);
@@ -98,6 +104,7 @@ setError(err instanceof Error ? err.message: "Something went wrong");
         auth.token,
       );
       onUpdated(updated);
+      onReactionSelected(emoji);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
@@ -219,17 +226,12 @@ setError(err instanceof Error ? err.message: "Something went wrong");
               {emoji} {count}
             </span>
           ))}
-          {auth &&
-            REACTION_OPTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                className="reaction-button"
-                onClick={() => handleReact(emoji)}
-              >
-                {emoji}
-              </button>
-            ))}
+          {auth && (
+            <ReactionPicker
+              history={reactionHistory}
+              onSelect={handleReact}
+            />
+          )}
         </div>
         </div>
         {auth && (
