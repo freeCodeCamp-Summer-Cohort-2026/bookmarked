@@ -8,7 +8,7 @@ const router = express.Router();
 
 const reactionsLimiter = rateLimit({
   windowMs: 60 * 1000,
-  limit: 8,
+  limit: 1,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

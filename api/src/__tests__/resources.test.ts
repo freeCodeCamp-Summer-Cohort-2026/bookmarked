@@ -125,7 +125,9 @@ describe("POST /api/resources/:id/reactions rate limiting", () => {
       .send({ title: "MDN Docs", url: "https://developer.mozilla.org", tags: ["JS", " Beginner "] });
 
     // const limit = 9 // get 3 fail test cases!!
-    const limit = 1 // get 1 fail test case!!
+    // const limit = 1 // get 1 fail test case!!
+
+    const limit = 1 // previously with limit set to 8 in reactionsLimiter it failed in 1 test case which used to send 201 instead of expected 429. And now with reactionsLimiter set to 1 it now fails for two cases but not from "POST /api/resources/${resourceID}/reactions" but from DELETE /api/resources/:id/reactions/:reactionId › rejects removing someone else's reaction TypeError: Cannot read properties of undefined (reading 'reactions')
 
     const resourceID = resource.body.resource.id
     const route = `/api/resources/${resourceID}/reactions`
