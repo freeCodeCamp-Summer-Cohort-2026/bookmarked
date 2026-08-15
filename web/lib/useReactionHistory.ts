@@ -39,25 +39,28 @@ export function useReactionHistory(userId: string | null) {
     }
   }, [userId]);
 
-  const recordReaction = useCallback((emoji: string) => {
-    if (!userId) return;
+  const recordReaction = useCallback(
+    (emoji: string) => {
+      if (!userId) return;
 
-    setHistory((current) => {
-      const next = [
-        emoji,
-        ...current.filter((existingEmoji) => existingEmoji !== emoji),
-      ];
-      try {
-        window.localStorage.setItem(
-          getReactionHistoryKey(userId),
-          JSON.stringify(next),
-        );
-      } catch {
-        // Keep the in-memory update if storage is unavailable.
-      }
-      return next;
-    });
-  }, [userId]);
+      setHistory((current) => {
+        const next = [
+          emoji,
+          ...current.filter((existingEmoji) => existingEmoji !== emoji),
+        ];
+        try {
+          window.localStorage.setItem(
+            getReactionHistoryKey(userId),
+            JSON.stringify(next),
+          );
+        } catch {
+          // Keep the in-memory update if storage is unavailable.
+        }
+        return next;
+      });
+    },
+    [userId],
+  );
 
   return { history, recordReaction };
 }

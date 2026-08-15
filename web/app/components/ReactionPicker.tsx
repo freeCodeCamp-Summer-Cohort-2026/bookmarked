@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 
-export const REACTION_OPTIONS = ["⭐", "🔖", "👍", "❤️", "😂", "🔥", "🚀", "✅"];
+export const REACTION_OPTIONS = [
+  "⭐",
+  "🔖",
+  "👍",
+  "❤️",
+  "😂",
+  "🔥",
+  "🚀",
+  "✅",
+];
 export const DEFAULT_REACTIONS = ["⭐", "🔖", "👍"];
 
 interface ReactionPickerProps {
@@ -18,9 +27,10 @@ export function getQuickReactions(history: string[]): string[] {
   return [...uniqueHistory, ...unusedDefaults].slice(0, 3);
 }
 
-export default function ReactionPicker(
-  { history, onSelect }: ReactionPickerProps,
-) {
+export default function ReactionPicker({
+  history,
+  onSelect,
+}: ReactionPickerProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const quickReactions = getQuickReactions(history);
 

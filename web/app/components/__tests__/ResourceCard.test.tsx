@@ -1,11 +1,6 @@
 import ResourceCard, { groupReactions } from "../ResourceCard";
 import { AuthState, Resource } from "@/lib/types";
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { addReaction } from "@/lib/api";
 
 jest.mock("@/lib/api");
@@ -20,7 +15,7 @@ describe("groupReactions", () => {
     expect(groupReactions(reactions)).toEqual({ "⭐": 2, "🔖": 1 });
   });
 
-  it("counts reactions by three or more and repeated emoji", ()  => {
+  it("counts reactions by three or more and repeated emoji", () => {
     const newReactions = [
       { id: "r1", emoji: "⭐" },
       { id: "r2", emoji: "🔖" },
@@ -28,7 +23,7 @@ describe("groupReactions", () => {
       { id: "r4", emoji: "🔖" },
       { id: "r5", emoji: "✅" },
     ];
-    expect(groupReactions(newReactions)).toEqual({"⭐": 2, "🔖": 2,"✅": 1})
+    expect(groupReactions(newReactions)).toEqual({ "⭐": 2, "🔖": 2, "✅": 1 });
   });
 
   it("returns an empty object for no reactions", () => {
@@ -44,8 +39,24 @@ describe("ResourceCard", () => {
     description: "Great explainer for async/await.",
     tags: ["javascript", "beginner"],
     createdAt: new Date().toISOString(),
-    submittedBy: { id: "u1", displayName: "Amina Yusuf", email: "amina@example.com", role: "member" },
-    reactions: [{ id: "r1", emoji: "⭐", user: { id: "u2", displayName: "Diego", email: "d@example.com", role: "member" } }],
+    submittedBy: {
+      id: "u1",
+      displayName: "Amina Yusuf",
+      email: "amina@example.com",
+      role: "member",
+    },
+    reactions: [
+      {
+        id: "r1",
+        emoji: "⭐",
+        user: {
+          id: "u2",
+          displayName: "Diego",
+          email: "d@example.com",
+          role: "member",
+        },
+      },
+    ],
   };
   const reactionHistory: string[] = [];
   const onReactionSelected = jest.fn();
@@ -55,39 +66,44 @@ describe("ResourceCard", () => {
   });
 
   const memberOwnerAuth: AuthState = {
-		token: "member-owner-token",
-		user: {
-			id: "u1",
-			email: "amina@example.com",
-			displayName: "Amina Yusuf",
-			role: "member",
-		},
+    token: "member-owner-token",
+    user: {
+      id: "u1",
+      email: "amina@example.com",
+      displayName: "Amina Yusuf",
+      role: "member",
+    },
   };
 
   const memberOtherAuth: AuthState = {
-		token: "member-other-token",
-		user: {
-			id: "u2",
-			email: "diego@example.com",
-			displayName: "Diego",
-			role: "member",
-		},
+    token: "member-other-token",
+    user: {
+      id: "u2",
+      email: "diego@example.com",
+      displayName: "Diego",
+      role: "member",
+    },
   };
 
   const moderatorAuth: AuthState = {
-		token: "moderator-token",
-		user: {
-			id: "u3",
-			email: "moderator@example.com",
-			displayName: "Moderator",
-			role: "moderator",
-		},
+    token: "moderator-token",
+    user: {
+      id: "u3",
+      email: "moderator@example.com",
+      displayName: "Moderator",
+      role: "moderator",
+    },
   };
 
   const auth: AuthState = {
-  token: "fake-token",
-  user: { id: "u2", displayName: "Diego", email: "d@example.com", role: "member" },
-};
+    token: "fake-token",
+    user: {
+      id: "u2",
+      displayName: "Diego",
+      email: "d@example.com",
+      role: "member",
+    },
+  };
 
   it("renders the resource title, author, and tags", () => {
     render(
@@ -98,7 +114,7 @@ describe("ResourceCard", () => {
         onReactionSelected={onReactionSelected}
         onUpdated={() => {}}
         onDeleted={() => {}}
-      />
+      />,
     );
 
     expect(screen.getByText("MDN Async/Await Guide")).toBeInTheDocument();
@@ -115,7 +131,7 @@ describe("ResourceCard", () => {
         reactionHistory={reactionHistory}
         onReactionSelected={onReactionSelected}
         onUpdated={() => {}}
-        onDeleted={()=>{}}
+        onDeleted={() => {}}
       />,
     );
     expect(screen.getByRole("link", { name: "View Details" })).toHaveAttribute(
@@ -133,7 +149,7 @@ describe("ResourceCard", () => {
         onReactionSelected={onReactionSelected}
         onUpdated={() => {}}
         onDeleted={() => {}}
-      />
+      />,
     );
 
     expect(
@@ -145,87 +161,103 @@ describe("ResourceCard", () => {
   });
 
   it("shows the delete button to the resource owner", () => {
-		render(
-			<ResourceCard
-				resource={resource}
-				auth={memberOwnerAuth}
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={memberOwnerAuth}
         reactionHistory={reactionHistory}
         onReactionSelected={onReactionSelected}
-				onUpdated={() => {}}
-				onDeleted={() => {}}
-			/>,
-		);
+        onUpdated={() => {}}
+        onDeleted={() => {}}
+      />,
+    );
 
-		expect(
-			screen.getByRole("button", { name: "Delete" }),
-		).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+  });
+
+  it("opens a confirmation modal before deleting", () => {
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={memberOwnerAuth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
+        onUpdated={() => {}}
+        onDeleted={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(
+      screen.getByRole("dialog", { name: "Delete resource" }),
+    ).toBeInTheDocument();
   });
 
   it("does not show the delete button to another member", () => {
-		render(
-			<ResourceCard
-				resource={resource}
-				auth={memberOtherAuth}
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={memberOtherAuth}
         reactionHistory={reactionHistory}
         onReactionSelected={onReactionSelected}
-				onUpdated={() => {}}
-				onDeleted={() => {}}
-			/>,
-		);
+        onUpdated={() => {}}
+        onDeleted={() => {}}
+      />,
+    );
 
-		expect(
-			screen.queryByRole("button", { name: "Delete" }),
-		).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Delete" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the delete button to moderators", () => {
-		render(
-			<ResourceCard
-				resource={resource}
-				auth={moderatorAuth}
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={moderatorAuth}
         reactionHistory={reactionHistory}
         onReactionSelected={onReactionSelected}
-				onUpdated={() => {}}
-				onDeleted={() => {}}
-			/>,
-		);
+        onUpdated={() => {}}
+        onDeleted={() => {}}
+      />,
+    );
 
-		expect(
-			screen.getByRole("button", { name: "Delete" }),
-		).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
   });
 
   it("does not show the delete button when logged out", () => {
-		render(
-			<ResourceCard
-				resource={resource}
-				auth={null}
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={null}
         reactionHistory={reactionHistory}
         onReactionSelected={onReactionSelected}
-				onUpdated={() => {}}
-				onDeleted={() => {}}
-			/>,
-		);
+        onUpdated={() => {}}
+        onDeleted={() => {}}
+      />,
+    );
 
-		expect(
-			screen.queryByRole("button", { name: "Delete" }),
-		).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Delete" }),
+    ).not.toBeInTheDocument();
   });
 
-   it("shows the report button when logged in", () => {
-  render(
-    <ResourceCard
-      resource={resource}
-      auth={auth}
-      reactionHistory={reactionHistory}
-      onReactionSelected={onReactionSelected}
-      onUpdated={() => {}}
-      onDeleted={() => {}}
-    />,
-  );
+  it("shows the report button when logged in", () => {
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={auth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
+        onUpdated={() => {}}
+        onDeleted={() => {}}
+      />,
+    );
 
-  expect(screen.getByText("Report broken link")).toBeInTheDocument();
-});
+    expect(screen.getByText("Report broken link")).toBeInTheDocument();
+  });
+
   it("records a reaction after a successful submission", async () => {
     const handleUpdated = jest.fn();
     const handleReactionSelected = jest.fn();
@@ -242,12 +274,10 @@ describe("ResourceCard", () => {
         onReactionSelected={handleReactionSelected}
         onUpdated={handleUpdated}
         onDeleted={() => {}}
-      />
+      />,
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "⭐" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "⭐" }));
 
     await waitFor(() => {
       expect(addReaction).toHaveBeenCalledWith(
@@ -280,14 +310,10 @@ describe("ResourceCard", () => {
       />,
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "⭐" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "⭐" }));
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Submission failed"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Submission failed")).toBeInTheDocument();
     });
 
     expect(handleUpdated).not.toHaveBeenCalled();

@@ -1,5 +1,8 @@
 import { act, renderHook } from "@testing-library/react";
-import { getReactionHistoryKey, useReactionHistory } from "../useReactionHistory";
+import {
+  getReactionHistoryKey,
+  useReactionHistory,
+} from "../useReactionHistory";
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -23,9 +26,7 @@ describe("useReactionHistory", () => {
     const userId = "u1";
     const key = getReactionHistoryKey(userId);
     window.localStorage.setItem(key, JSON.stringify(["🔥", "❤️"]));
-    const { result } = renderHook(
-      () => useReactionHistory(userId),
-    );
+    const { result } = renderHook(() => useReactionHistory(userId));
 
     expect(result.current.history).toEqual(["🔥", "❤️"]);
   });
@@ -34,14 +35,9 @@ describe("useReactionHistory", () => {
     const userId = "u1";
     const key = getReactionHistoryKey(userId);
 
-    window.localStorage.setItem(
-      key,
-      JSON.stringify(["❤️", "🔥"]),
-    );
+    window.localStorage.setItem(key, JSON.stringify(["❤️", "🔥"]));
 
-    const { result } = renderHook(
-      () => useReactionHistory(userId),
-    );
+    const { result } = renderHook(() => useReactionHistory(userId));
 
     act(() => {
       result.current.recordReaction("🔥");
@@ -62,12 +58,8 @@ describe("useReactionHistory", () => {
     const userOneId = "u1";
     const userTwoId = "u2";
 
-    const userOneHook = renderHook(
-      () => useReactionHistory(userOneId),
-    );
-    const userTwoHook = renderHook(
-      () => useReactionHistory(userTwoId),
-    );
+    const userOneHook = renderHook(() => useReactionHistory(userOneId));
+    const userTwoHook = renderHook(() => useReactionHistory(userTwoId));
 
     act(() => {
       userOneHook.result.current.recordReaction("🔥");

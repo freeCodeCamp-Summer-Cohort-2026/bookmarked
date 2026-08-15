@@ -12,12 +12,31 @@ const resource: Resource = {
   description: "Great explainer for async/await.",
   tags: ["javascript", "beginner"],
   createdAt: new Date().toISOString(),
-  submittedBy: { id: "u1", displayName: "Amina Yusuf", email: "amina@example.com", role: "member" },
-  reactions: [{ id: "r1", emoji: "⭐", user: { id: "u2", displayName: "Diego", email: "d@example.com", role: "member" } }],
+  submittedBy: {
+    id: "u1",
+    displayName: "Amina Yusuf",
+    email: "amina@example.com",
+    role: "member",
+  },
+  reactions: [
+    {
+      id: "r1",
+      emoji: "⭐",
+      user: {
+        id: "u2",
+        displayName: "Diego",
+        email: "d@example.com",
+        role: "member",
+      },
+    },
+  ],
 };
 
 jest.mock("@/lib/api"); // mock /lib/api call to 'getResource(id)'
-jest.mock("next/navigation", () => ({ useParams: jest.fn(), useRouter: jest.fn() })); // mock useParams and useRouter
+jest.mock("next/navigation", () => ({
+  useParams: jest.fn(),
+  useRouter: jest.fn(),
+})); // mock useParams and useRouter
 jest.mock("@/lib/useAuth", () => ({
   useAuth: () => ({ auth: null, ready: true }),
 })); // mock auth call
