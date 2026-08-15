@@ -64,6 +64,28 @@ router.get("/leaderboard", async (_req: Request, res: Response) => {
   }
 });
 
+// GET /api/resources/random
+// Registered before "/:id" so it is not matched as a resource id.
+router.get("/random", async (req: Request, res: Response) => {
+  try {
+    const allResource = await prisma.resource.findMany({
+      include: resourceInclude,
+    });
+
+    if (allResource.length === 0) {
+      return res.status(404).json({ error: "Resource not available" });
+    }
+
+    const randomIndex = Math.floor(Math.random() * allResource.length);
+
+    const randomResource = allResource[randomIndex];
+
+    return res.json({ resource: randomResource });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to fetch random resource" });
+  }
+});
+
 // GET /api/resources/:id
 router.get("/:id", async (req: Request, res: Response) => {
   try {
