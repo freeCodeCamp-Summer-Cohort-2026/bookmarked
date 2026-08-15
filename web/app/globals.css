@@ -209,6 +209,10 @@ section {
 .resource-title a {
   color: #1a1a2e;
   font-weight: 700;
+  display: block;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .resource-title a:hover {
