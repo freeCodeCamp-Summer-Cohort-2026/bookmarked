@@ -170,6 +170,47 @@ describe("GET /api/resources", () => {
   });
 });
 
+describe("GET /api/resources/leaderboard", () => {
+  it("returns an empty list when there are no resources", async () => {
+    const res = await request(app).get("/api/resources/leaderboard");
+
+    expect(res.status).toBe(200);
+    expect(res.body.leaderboard).toEqual([]);
+  });
+
+  it("ranks contributors by count descending, excluding zero-resource users", async () => {
+    const alice = await registerAndLogin("alice@example.com");
+    const bob = await registerAndLogin("bob@example.com");
+    await registerAndLogin("carol@example.com"); // submits nothing
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${alice.token}`)
+      .send({ title: "A1", url: "https://a1.example.com" });
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${alice.token}`)
+      .send({ title: "A2", url: "https://a2.example.com" });
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${bob.token}`)
+      .send({ title: "B1", url: "https://b1.example.com" });
+
+    const res = await request(app).get("/api/resources/leaderboard");
+
+    expect(res.status).toBe(200);
+    expect(res.body.leaderboard).toHaveLength(2);
+    expect(res.body.leaderboard[0]).toMatchObject({
+      user: { id: alice.user.id },
+      count: 2,
+    });
+    expect(res.body.leaderboard[1]).toMatchObject({
+      user: { id: bob.user.id },
+      count: 1,
+    });
+  });
+});
+
 describe("DELETE /api/resources/:id", () => {
   it("allows a member to delete their own resource", async () => {
     const { token } = await registerAndLogin("owner-delete@example.com");

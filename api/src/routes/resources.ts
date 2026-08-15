@@ -37,6 +37,33 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/resources/leaderboard
+// Registered before "/:id" so it is not matched as a resource id.
+router.get("/leaderboard", async (_req: Request, res: Response) => {
+  try {
+    const grouped = await prisma.resource.groupBy({
+      by: ["submittedById"],
+      _count: { submittedById: true },
+      orderBy: { _count: { submittedById: "desc" } },
+    });
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: grouped.map((g) => g.submittedById) } },
+      select: { id: true, displayName: true, email: true },
+    });
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    const leaderboard = grouped.map((g) => ({
+      user: userById.get(g.submittedById),
+      count: g._count.submittedById,
+    }));
+
+    return res.json({ leaderboard });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to fetch leaderboard" });
+  }
+});
+
 // GET /api/resources/:id
 router.get("/:id", async (req: Request, res: Response) => {
   try {
