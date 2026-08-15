@@ -1,5 +1,5 @@
 import {screen, render, fireEvent, waitFor} from "@testing-library/react";
-import ResourceForm from "./ResourceForm";
+import ResourceForm from "../ResourceForm";
 import { createResource } from "@/lib/api";
 
 jest.mock("@/lib/api");
