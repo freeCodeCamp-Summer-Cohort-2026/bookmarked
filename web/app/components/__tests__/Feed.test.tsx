@@ -27,6 +27,7 @@ describe("Feed", () => {
     ).toBeInTheDocument();
   });
 
+<<<<<<< HEAD
   it("renders a ResourceCard per resource once loaded", async () => {
 
     const resource1: Resource = {
@@ -60,6 +61,38 @@ describe("Feed", () => {
     },
     reactions : []
     };
+=======
+  const makeResource = (overrides: Partial<Resource>): Resource => ({
+    id: "1",
+    title: "Test Resource",
+    url: "https://developer.mozilla.org",
+    description: "Test description.",
+    tags: ["javascript", "beginner"],
+    createdAt: new Date().toISOString(),
+    submittedBy: {
+      id: "u1",
+      displayName: "Amina Yusuf",
+      email: "amina@example.com",
+      role: "member",
+    },
+    reactions: [],
+    ...overrides,
+  });
+
+  it("renders a ResourceCard per resource once loaded", async () => {
+
+    const resource1 = makeResource({
+      id: "1",
+      title: "MDN Async/Await Guide",
+      description: "Great explainer for async/await.",
+    });
+
+    const resource2 = makeResource({
+      id: "2",
+      title: "Some other Guide",
+      description: "Great explainer for loops.",
+    });
+>>>>>>> c461abd (Added tests in Feed.test.tsx)
 
     (listResources as jest.Mock).mockResolvedValue(
       {resources : [resource1, resource2]}
@@ -69,4 +102,8 @@ describe("Feed", () => {
     const cards = await screen.findAllByRole("article");
     expect(cards).toHaveLength(2);
   });
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> c461abd (Added tests in Feed.test.tsx)
