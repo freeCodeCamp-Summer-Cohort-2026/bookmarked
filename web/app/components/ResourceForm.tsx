@@ -6,9 +6,10 @@ import { AuthState, Resource } from "@/lib/types";
 
 interface ResourceFormProps {
   auth: AuthState | null;
+  onPosted?: (resource: Resource) => void;
 }
 
-export default function ResourceForm({ auth }: ResourceFormProps) {
+export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
@@ -23,8 +24,6 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
     e.preventDefault();
     setError(null);
 
-    // NOTE: no loading state here yet while the request is in flight -
-    // see the "add a loading state to the resource form" issue.
     const tags = tagsInput
       .split(",")
       .map((tag) => tag.trim())
@@ -33,8 +32,13 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
     try {
       const { resource } = await createResource(
         { title, url, description, tags },
-        auth!.token,
+        auth.token
       );
+
+      // notify parent
+      onPosted?.(resource);
+
+      // reset fields
       setTitle("");
       setUrl("");
       setDescription("");
@@ -45,7 +49,7 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
   }
 
   return (
-    <form className="resource-form" onSubmit={handleSubmit}>
+    <form role="form" className="resource-form" onSubmit={handleSubmit}>
       <input
         type="text"
         placeholder="Title"
