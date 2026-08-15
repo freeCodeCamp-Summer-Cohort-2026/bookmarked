@@ -103,12 +103,16 @@ setError(err instanceof Error ? err.message: "Something went wrong");
     }
   }
 
-  const correctRelativeTimeFormat = (inputString: Date | string) => {
+  const formatRelativeTime = (inputString: Date | string) => {
     const date = new Date(inputString);
     
     const now = new Date();
 
     const diffInMs = now.getTime() - date.getTime();
+
+    if (diffInMs < 0) {
+      return "in future";
+    }
 
     const diffInSeconds = diffInMs / 1000;
     if (diffInSeconds < 60) {
@@ -116,10 +120,6 @@ setError(err instanceof Error ? err.message: "Something went wrong");
     }
 
     const diffInMinutes = diffInSeconds / 60;
-    if (diffInMinutes < 1) {
-      return "just now";
-    }
-
     if (diffInMinutes < 60) {
       const roundedMinutes = Math.round(diffInMinutes);
       return `${roundedMinutes} minute${roundedMinutes === 1 ? "" : "s"} ago`;
@@ -239,7 +239,7 @@ setError(err instanceof Error ? err.message: "Something went wrong");
         <a className="resource-title-details" href={`/${resource.id}`}>
           View Details
         </a>
-        <time>{correctRelativeTimeFormat(resource.createdAt)}</time>
+        <time>{formatRelativeTime(resource.createdAt)}</time>
         <div className="actions">
           {canDelete && (
           <button
