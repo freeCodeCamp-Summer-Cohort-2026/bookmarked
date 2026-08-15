@@ -72,3 +72,4 @@ describe("ResourceForm", () => {
     expect(onPosted).toHaveBeenCalledWith(mockResponse.resource);
   });
 });
+});
