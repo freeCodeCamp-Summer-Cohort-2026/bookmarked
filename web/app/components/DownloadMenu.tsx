@@ -88,8 +88,6 @@ export default function DownloadMenu({ token }: DownloadMenuProps) {
     setOpen(false);
   }
 
-  const activeFormat = FORMATS.find((f) => f.value === format)!;
-
   return (
     <div className="download-menu" ref={rootRef}>
       <div className="download-menu__group">
