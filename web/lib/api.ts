@@ -137,16 +137,18 @@ export function addReaction(
 }
 
 export function reportResource(resourceId: string, token: string) {
-  return request<{ resource: Resource }>(`/api/resources/${resourceId}/report`, {
-    method: "POST",
-    token
-  })
-
+  return request<{ resource: Resource }>(
+    `/api/resources/${resourceId}/report`,
+    {
+      method: "POST",
+      token,
+    },
+  );
 }
 
 export async function exportResources(
   format: "csv" | "json",
-  token: string
+  token: string,
 ): Promise<{ blob: Blob; filename: string }> {
   const res = await fetch(`${API_URL}/api/resources/export?format=${format}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -160,7 +162,19 @@ export async function exportResources(
   const blob = await res.blob();
   const disposition = res.headers.get("Content-Disposition");
   const match = disposition?.match(/filename="(.+)"/);
-  const filename = match?.[1] || `resources.${format === "csv" ? "csv" : "json"}`;
+  const filename =
+    match?.[1] || `resources.${format === "csv" ? "csv" : "json"}`;
 
   return { blob, filename };
+}
+
+
+export function removeReaction(
+  input: { resourceId: string; reactionId: string },
+  token: string,
+) {
+  return request<{ resource: Resource }>(
+    `/api/resources/${input.resourceId}/reactions/${input.reactionId}`,
+    { method: "DELETE", token },
+  );
 }
