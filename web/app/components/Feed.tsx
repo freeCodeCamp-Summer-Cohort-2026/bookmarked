@@ -18,6 +18,9 @@ export default function Feed({ auth, socket }: FeedProps) {
   const [mineOnly, setMineOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sort,setSort] = useState<string>("newest");
+ 
+
 
   useEffect(() => {
     if (!auth) setMineOnly(false);
@@ -29,6 +32,7 @@ export default function Feed({ auth, socket }: FeedProps) {
     listResources({
       tag: tagFilter || undefined,
       submittedBy: mineOnly && auth ? auth.user.id : undefined,
+      sort
     })
       .then(({ resources: fetched }) => {
         if (!cancelled) setResources(fetched);
@@ -44,7 +48,8 @@ export default function Feed({ auth, socket }: FeedProps) {
     return () => {
       cancelled = true;
     };
-  }, [tagFilter, mineOnly, auth]);
+
+  }, [tagFilter, mineOnly, auth,sort]);
 
   useEffect(() => {
     if (!socket) return;
@@ -72,7 +77,8 @@ export default function Feed({ auth, socket }: FeedProps) {
       socket.off("resource:created", handleCreated);
       socket.off("resource:updated", handleUpdated);
     };
-  }, [socket, auth, mineOnly, tagFilter]);
+  }, [socket, auth, mineOnly, tagFilter,sort]);
+
 
   const tags = useMemo(() => {
     const set = new Set<string>();
@@ -97,7 +103,13 @@ export default function Feed({ auth, socket }: FeedProps) {
   return (
     <div className="feed">
       <div className="filter-bar">
-        <TagFilter tags={tags} value={tagFilter} onChange={setTagFilter} />
+    <TagFilter tags={tags} value={tagFilter} onChange={setTagFilter} />
+
+   {/* Dropdown for sorting */}
+<select value={sort} onChange={(e) => setSort(e.target.value)}>
+  <option value="newest">Newest</option>
+  <option value="top">Most reactions</option>
+</select>
         {auth && (
           <label className="mine-toggle">
             <input

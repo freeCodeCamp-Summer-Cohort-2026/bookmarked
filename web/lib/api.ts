@@ -65,16 +65,20 @@ export function login(input: { email: string; password: string }) {
   return request<AuthState>("/api/auth/login", { method: "POST", body: input });
 }
 
+
 export function getResource(id: string) {
   return request<{ resource: Resource }>(`/api/resources/${id}`);
 }
 
 export function listResources(
-  params: { tag?: string; submittedBy?: string } = {},
+  params: { tag?: string; submittedBy?: string;  sort?:string;} = {},
 ) {
+
+
   const search = new URLSearchParams();
   if (params.tag) search.set("tag", params.tag);
   if (params.submittedBy) search.set("submittedBy", params.submittedBy);
+  if(params.sort) search.set("sort", params.sort)
   const query = search.toString() ? `?${search.toString()}` : "";
   return request<{ resources: Resource[] }>(`/api/resources${query}`);
 }
