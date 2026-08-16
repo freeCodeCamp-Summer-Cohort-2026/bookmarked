@@ -18,9 +18,9 @@ const FORMATS: ReadonlyArray<{
   label: string;
   icon: typeof FileJson;
 }> = [
-    { value: "csv", label: "CSV", icon: FileSpreadsheet },
-    { value: "json", label: "JSON", icon: FileJson },
-  ];
+  { value: "csv", label: "CSV", icon: FileSpreadsheet },
+  { value: "json", label: "JSON", icon: FileJson },
+];
 
 interface DownloadMenuProps {
   token?: string;
@@ -98,10 +98,16 @@ export default function DownloadMenu({ token }: DownloadMenuProps) {
           className="download-menu__main"
           onClick={handleDownload}
           disabled={!canDownload || busy}
-          title={canDownload ? `Download as ${format.toUpperCase()}` : "Log in to export your resources"}
+          title={
+            canDownload
+              ? `Download as ${format.toUpperCase()}`
+              : "Log in to export your resources"
+          }
         >
           <Download size={16} strokeWidth={2} aria-hidden="true" />
-          <span>{busy ? "Preparing..." : `Download ${format.toUpperCase()}`}</span>
+          <span>
+            {busy ? "Preparing..." : `Download ${format.toUpperCase()}`}
+          </span>
         </button>
         <button
           type="button"
@@ -120,7 +126,11 @@ export default function DownloadMenu({ token }: DownloadMenuProps) {
       </div>
 
       {open && (
-        <div className="download-menu__menu" role="menu" aria-label="Export format">
+        <div
+          className="download-menu__menu"
+          role="menu"
+          aria-label="Export format"
+        >
           {FORMATS.map((option) => {
             const selected = option.value === format;
             const Icon = option.icon;

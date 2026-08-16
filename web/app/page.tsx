@@ -28,7 +28,7 @@ export default function HomePage() {
       <section>
         <div className="section-header">
           <h2>My Feed</h2>
-          <DownloadMenu token={auth?.token} />
+          {auth && <DownloadMenu token={auth?.token} />}
         </div>
         <Feed auth={auth} socket={socket} />
       </section>

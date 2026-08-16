@@ -1,5 +1,8 @@
 import type { Resource } from "@prisma/client";
-type ExportableResource = Pick<Resource, "title" | "url" | "tags" | "createdAt">;
+type ExportableResource = Pick<
+  Resource,
+  "title" | "url" | "tags" | "createdAt"
+>;
 
 function toCsvValue(value: string): string {
   if (/[",\n]/.test(value)) {
