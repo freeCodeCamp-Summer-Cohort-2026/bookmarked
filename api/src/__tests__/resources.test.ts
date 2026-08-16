@@ -170,6 +170,71 @@ describe("GET /api/resources", () => {
   });
 });
 
+describe("GET /api/resources/tag-counts", () => {
+  it("returns tag counts sorted by count descending", async () => {
+    const { token } = await registerAndLogin("tag-counts@example.com");
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "Resource 1",
+        url: "https://example.com/1",
+        tags: ["javascript", "react"],
+      });
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "Resource 2",
+        url: "https://example.com/2",
+        tags: ["javascript", "css"],
+      });
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "Resource 3",
+        url: "https://example.com/3",
+        tags: ["javascript", "react"],
+      });
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "Resource 4",
+        url: "https://example.com/4",
+        tags: ["css"],
+      });
+
+    const res = await request(app).get("/api/resources/tag-counts");
+
+    expect(res.status).toBe(200);
+
+    expect(res.body.tagCounts).toEqual({
+      javascript: 3,
+      css: 2,
+      react: 2,
+    });
+
+    expect(Object.keys(res.body.tagCounts)).toEqual([
+      "javascript",
+      "css",
+      "react",
+    ]);
+  });
+
+  it("returns empty tag counts when there are no resources", async () => {
+    const res = await request(app).get("/api/resources/tag-counts");
+
+    expect(res.status).toBe(200);
+    expect(res.body.tagCounts).toEqual({});
+  });
+});
+
 describe("GET /api/resources/leaderboard", () => {
   it("returns an empty list when there are no resources", async () => {
     const res = await request(app).get("/api/resources/leaderboard");

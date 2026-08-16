@@ -129,6 +129,42 @@ router.get("/random", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/resources/tag-counts
+// Registered before "/:id" so it is not matched as a resource id.
+router.get("/tag-counts", async (_req: Request, res: Response) => {
+  try {
+    const tagCounts = await prisma.resource.groupBy({
+      by: ["tags"],
+      _count: { tags: true },
+      orderBy: { _count: { tags: "desc" } },
+    });
+
+    if (tagCounts.length === 0) {
+      return res.json({ tagCounts: {} });
+    }
+
+    const flattenedTagCounts: Record<string, number> = {};
+
+    for (const group of tagCounts) {
+      for (const tag of group.tags) {
+        flattenedTagCounts[tag] =
+          (flattenedTagCounts[tag] || 0) + group._count.tags;
+      }
+    }
+
+    const sortedTagCounts = Object.fromEntries(
+      Object.entries(flattenedTagCounts).sort(
+        ([tagA, countA], [tagB, countB]) =>
+          countB - countA || tagA.localeCompare(tagB),
+      ),
+    );
+
+    return res.json({ tagCounts: sortedTagCounts });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to fetch tag counts" });
+  }
+});
+
 // GET /api/resources/:id
 router.get("/:id", async (req: Request, res: Response) => {
   try {
