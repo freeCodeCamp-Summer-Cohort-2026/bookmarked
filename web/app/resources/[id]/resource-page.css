@@ -297,6 +297,17 @@
   flex: 0 0 auto;
 }
 
+.resource-detail-preview-hint {
+  margin: 0;
+  padding: 0.45rem 0.85rem;
+  color: #8a919e;
+  background: #fafbfc;
+  border-bottom: 1px solid #eceef2;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
 .resource-detail-preview-frame {
   position: relative;
   height: 480px;

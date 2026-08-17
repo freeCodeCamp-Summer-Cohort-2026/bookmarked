@@ -403,6 +403,10 @@ export default function Page() {
               Open in new tab
             </a>
           </div>
+          <p className="resource-detail-preview-hint">
+            Some sites block embedding. If nothing loads, open the link
+            directly.
+          </p>
           {isPreviewable(resource.url) ? (
             <div className="resource-detail-preview-frame">
               {!previewLoaded && (
