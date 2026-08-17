@@ -363,7 +363,7 @@ export default function ResourceCard({
               {reported ? "Reported" : "Report broken link"}
             </button>
           )}
-          <a className="resource-text-action" href={`/${resource.id}`}>
+          <a className="resource-text-action" href={`/resources/${resource.id}`}>
             View Details
           </a>
         </div>
