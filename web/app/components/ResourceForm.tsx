@@ -1,8 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { createResource } from "@/lib/api";
-import { AuthState, Resource } from "@/lib/types";
+import { CornerDownLeft } from "lucide-react";
+import { ApiError, createResource } from "@/lib/api";
+import { AuthState } from "@/lib/types";
+import { Modal } from "./Modal";
 
 interface ResourceFormProps {
   auth: AuthState | null;
@@ -15,10 +17,15 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
   const [description, setDescription] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [pendingDuplicate, setPendingDuplicate] =
+    useState<PendingDuplicate | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   if (!auth) {
     return <p className="hint">Log in to share a resource.</p>;
   }
+
+  const token = auth.token;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,6 +36,39 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
       .map((tag) => tag.trim())
       .filter(Boolean);
 
+    const input = { title, url, description, tags };
+
+    try {
+      await createResource(input, token);
+      setTitle("");
+      setUrl("");
+      setDescription("");
+      setTagsInput("");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setPendingDuplicate({
+          input,
+          existingTitle:
+            typeof err.data?.duplicate?.title === "string"
+              ? err.data.duplicate.title
+              : title,
+        });
+        setError(null);
+        return;
+      }
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
+  function cancel() {
+    setPendingDuplicate(null);
+  }
+
+  async function confirmAnyway() {
+    if (!pendingDuplicate || isConfirming) return;
+
+    setIsConfirming(true);
+    setError(null);
     try {
       const { resource } = await createResource(
         { title, url, description, tags },
@@ -43,8 +83,11 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
       setUrl("");
       setDescription("");
       setTagsInput("");
+      setPendingDuplicate(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsConfirming(false);
     }
   }
 
@@ -72,16 +115,41 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
           onChange={(e) => setDescription(e.target.value)}
           maxLength={1000}
         />
-        <span className="char-count">{description.length}/1000</span>
-      </div>
-      <input
-        type="text"
-        placeholder="Tags, comma separated (e.g. javascript, beginner)"
-        value={tagsInput}
-        onChange={(e) => setTagsInput(e.target.value)}
-      />
-      <button type="submit">Share resource</button>
-      {error && <p className="error">{error}</p>}
-    </form>
+        <button type="submit">Share resource</button>
+        {error && <p className="error">{error}</p>}
+      </form>
+      {pendingDuplicate && (
+        <Modal
+          title="Duplicate resource"
+          onClose={cancel}
+          onConfirm={confirmAnyway}
+        >
+          <p className="modal-message">
+            A resource titled <strong>{pendingDuplicate.existingTitle}</strong>{" "}
+            already uses this URL. Do you want to add your resource anyway?
+          </p>
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="modal-cancel"
+              onClick={cancel}
+              disabled={isConfirming}
+            >
+              <span>Cancel</span>
+              <kbd>Esc</kbd>
+            </button>
+            <button
+              type="button"
+              className="modal-confirm"
+              onClick={confirmAnyway}
+              disabled={isConfirming}
+            >
+              <span>{isConfirming ? "Adding..." : "Add anyway"}</span>
+              <CornerDownLeft size={17} strokeWidth={2} aria-hidden="true" />
+            </button>
+          </div>
+        </Modal>
+      )}
+    </>
   );
 }

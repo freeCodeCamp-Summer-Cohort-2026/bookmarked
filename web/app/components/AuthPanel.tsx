@@ -10,13 +10,20 @@ interface AuthPanelProps {
   onSignOut: () => void;
 }
 
-export default function AuthPanel({ auth, onSignIn, onSignOut }: AuthPanelProps) {
+export default function AuthPanel({
+  auth,
+  onSignIn,
+  onSignOut,
+}: AuthPanelProps) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   if (auth) {
     return (
@@ -35,6 +42,13 @@ export default function AuthPanel({ auth, onSignIn, onSignOut }: AuthPanelProps)
     e.preventDefault();
     setError(null);
     setLoading(true);
+
+    if (mode === "register" && password !== confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
     try {
       const result =
         mode === "login"
@@ -83,16 +97,54 @@ export default function AuthPanel({ auth, onSignIn, onSignOut }: AuthPanelProps)
         onChange={(e) => setEmail(e.target.value)}
         required
       />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-        minLength={8}
-      />
+
+<div className="password-field">
+        <input
+          type={showPassword ? "text" : "password"}
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={8}
+        />
+        <button
+          type="button"
+          className="password-toggle"
+          onClick={() => setShowPassword((prev) => !prev)}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-pressed={showPassword}
+        >
+          {showPassword ? "Hide" : "Show"}
+        </button>
+      </div>
+
+      {mode === "register" && (
+        <div className="password-field">
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder="Confirm password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={8}
+          />
+          <button
+            type="button"
+            className="password-toggle"
+            onClick={() => setShowConfirmPassword((prev) => !prev)}
+            aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+            aria-pressed={showConfirmPassword}
+          >
+            {showConfirmPassword ? "Hide" : "Show"}
+          </button>
+        </div>
+      )}
       <button type="submit" disabled={loading}>
-        {loading ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}
+        {loading
+          ? "Please wait..."
+          : mode === "login"
+            ? "Log in"
+            : "Create account"}
       </button>
       {error && <p className="error">{error}</p>}
     </form>
