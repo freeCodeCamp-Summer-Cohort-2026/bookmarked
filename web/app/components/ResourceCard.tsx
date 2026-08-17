@@ -145,7 +145,7 @@ export default function ResourceCard({
 
   const formatRelativeTime = (inputString: Date | string) => {
     const date = new Date(inputString);
-    
+
     const now = new Date();
 
     const diffInMs = now.getTime() - date.getTime();
@@ -179,7 +179,7 @@ export default function ResourceCard({
 
     // fallback to full date
     return date.toLocaleString("en-US");
-  }
+  };
 
   async function confirmDelete() {
     if (!auth || !canDelete || isDeleting) return;
