@@ -21,6 +21,7 @@ import {
 } from "@/lib/api";
 import { AuthState, Reaction, Resource } from "@/lib/types";
 import { Modal } from "./Modal";
+import { format } from "date-fns";
 
 // Starter emoji set - deliberately small. See the "add another reaction
 // emoji option" good-first-issue for extending this.
@@ -350,7 +351,7 @@ export default function ResourceCard({
       <footer className="resource-card-footer">
         <time dateTime={resource.createdAt}>
           <CalendarDays size={14} aria-hidden="true" />
-          {new Date(resource.createdAt).toLocaleString()}
+          {format(new Date(resource.createdAt), "PPP 'at' p")}
         </time>
         <div className="resource-footer-actions">
           {auth && (
