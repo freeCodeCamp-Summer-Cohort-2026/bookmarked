@@ -1,61 +1,76 @@
-.loading {
+.resource-detail-loading {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  padding: 4rem 0;
+  color: #697080;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+}
+
+.resource-detail-back {
+  display: inline-flex;
   align-items: center;
-  font-size: 2em;
-}
-
-.error {
-  display: flex;
-  justify-self: center;
-  font-size: 1em;
-  color: red;
-}
-
-.container {
-  display: flex;
-  flex-direction: column;
-}
-
-.container label {
-  font-size: 2em;
-}
-
-.container p span {
-  font-size: 2.5em;
-  background-color: gray;
-}
-
-.description-text {
-  font-size: 3em;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
   padding: 0;
+  color: #626a74;
+  background: transparent;
+  border: 0;
+  font-family: var(--font-ui);
+  font-size: 0.86rem;
+  text-decoration: none;
+}
+
+.resource-detail-back:hover {
+  color: #1e6b41;
+}
+
+.resource-detail-title {
   margin: 0;
-  background-color: pink;
+  font-size: 1.3rem;
+  line-height: 1.35;
 }
 
-.resource-id {
-  display: flex;
-  align-self: flex-end;
-  font-size: 0.5em;
+.resource-detail-title a {
+  color: #1a1a2e;
+  font-weight: 700;
+  text-decoration: none;
 }
 
-.tags-container {
+.resource-detail-title a:hover {
+  color: #1e6b41;
+}
+
+.resource-detail-url {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  color: #858c98;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  word-break: break-all;
+}
+
+.resource-detail-url a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.resource-detail-url a:hover {
+  color: #1e6b41;
+  text-decoration: underline;
+}
+
+.resource-detail-meta {
   display: flex;
   justify-content: center;
+  margin-top: 1rem;
 }
 
-.emoji-container {
-  display: flex;
-  justify-content: center;
-}
-
-h1 {
-  display: flex;
-  justify-content: center;
-}
-
-h2 {
-  display: flex;
-  justify-content: center;
-  font-size: 1em;
+.resource-detail-id {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  color: #b0b4bc;
+  user-select: all;
 }

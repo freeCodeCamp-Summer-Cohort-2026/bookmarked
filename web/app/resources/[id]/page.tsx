@@ -10,9 +10,18 @@ import { useAuth } from "@/lib/useAuth";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  CalendarDays,
+  Check,
+  CircleUserRound,
+  Copy,
+  ExternalLink,
+  Trash2,
+} from "lucide-react";
+import {
   groupReactions,
   REACTION_OPTIONS,
 } from "../../components/ResourceCard";
+import { Modal } from "../../components/Modal";
 import "./resource-page.css";
 
 export default function Page() {
@@ -22,6 +31,9 @@ export default function Page() {
   const [resource, setResource] = useState<Resource | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reported, setReported] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -66,30 +78,46 @@ export default function Page() {
     }
   }
 
-  async function handleDelete() {
-    if (!auth || !resource || !canDelete) return;
-
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this resource?",
-    );
-
-    if (!confirmed) return;
-
-    setError(null);
-
+  async function handleCopyLink() {
+    if (!resource) return;
     try {
-      await deleteResource(resource.id, auth.token);
-      router.push("/"); //return to homepage if they delete it because the page goes away
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      await navigator.clipboard.writeText(resource.url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1000);
+    } catch {
+      setError("Failed to copy link");
     }
   }
 
-  if (error) return <p className="error">{error}</p>;
+  async function confirmDelete() {
+    if (!auth || !resource || !canDelete || isDeleting) return;
+    setError(null);
+    setIsDeleting(true);
+    try {
+      await deleteResource(resource.id, auth.token);
+      setIsDeleteModalOpen(false);
+      router.push("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  if (error && !resource) {
+    return (
+      <div className="container">
+        <p className="error">{error}</p>
+      </div>
+    );
+  }
+
   if (!resource) {
     return (
-      <div className="loading">
-        <p>Loading...</p>
+      <div className="container">
+        <div className="resource-detail-loading">
+          <p>Loading...</p>
+        </div>
       </div>
     );
   }
@@ -102,14 +130,48 @@ export default function Page() {
 
   return (
     <div className="container">
-      <h1>{resource.title}</h1>
-      <h2>
-        <a href={resource.url} target="_blank" rel="noreferrer noopener">
-          {resource.url}
-        </a>
-      </h2>
+      <a className="resource-detail-back" href="/">
+        &larr; Back
+      </a>
 
-      <div className="tags-container">
+      <article className="resource-card">
+        <header className="resource-card-header">
+          <div className="resource-heading">
+            <h1 className="resource-detail-title">
+              <a href={resource.url} target="_blank" rel="noreferrer noopener">
+                {resource.title}
+              </a>
+            </h1>
+            <span className="resource-detail-url">
+              <ExternalLink size={13} aria-hidden="true" />
+              <a href={resource.url} target="_blank" rel="noreferrer noopener">
+                {resource.url}
+              </a>
+            </span>
+            <span className="resource-author">
+              <CircleUserRound size={24} strokeWidth={1} aria-hidden="true" />
+              <span className="author">
+                {resource.submittedBy?.displayName || "Unknown"}
+              </span>
+            </span>
+          </div>
+          <div className="resource-card-controls">
+            <button
+              type="button"
+              className={`card-icon-button${copied ? " card-icon-button-success" : ""}`}
+              onClick={handleCopyLink}
+              aria-label={copied ? "Link copied" : "Copy link"}
+              title={copied ? "Link copied" : "Copy link"}
+            >
+              {copied ? (
+                <Check size={17} aria-hidden="true" />
+              ) : (
+                <Copy size={17} aria-hidden="true" />
+              )}
+            </button>
+          </div>
+        </header>
+
         {resource.tags?.length > 0 && (
           <div className="tags">
             {resource.tags.map((tag) => (
@@ -119,62 +181,109 @@ export default function Page() {
             ))}
           </div>
         )}
-      </div>
 
-      <div className="emoji-container">
-        <div className="reactions">
-          {Object.entries(reactionGroups).map(([emoji, count]) => (
-            <span key={emoji} className="reaction-count">
-              {emoji} {count}
-            </span>
-          ))}
-          {auth &&
-            REACTION_OPTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                className="reaction-button"
-                onClick={() => handleReact(emoji)}
-              >
-                {emoji}
-              </button>
+        {resource.description && (
+          <div className="resource-description">
+            <div className="resource-description-text">
+              {resource.description}
+            </div>
+          </div>
+        )}
+
+        <div className="resource-card-toolbar">
+          <div className="reactions">
+            {Object.entries(reactionGroups).map(([emoji, count]) => (
+              <span key={emoji} className="reaction-count">
+                {emoji} {count}
+              </span>
             ))}
+            {auth &&
+              REACTION_OPTIONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  className="reaction-button"
+                  onClick={() => handleReact(emoji)}
+                  title={`React with ${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+          </div>
+
+          {canDelete && (
+            <div className="resource-card-controls">
+              <button
+                type="button"
+                className="card-icon-button card-icon-button-danger"
+                onClick={() => setIsDeleteModalOpen(true)}
+                aria-label="Delete"
+                title="Delete resource"
+              >
+                <Trash2 size={17} aria-hidden="true" />
+              </button>
+            </div>
+          )}
         </div>
+
+        <footer className="resource-card-footer">
+          <time dateTime={resource.createdAt}>
+            <CalendarDays size={14} aria-hidden="true" />
+            {new Date(resource.createdAt).toLocaleString()}
+          </time>
+          <div className="resource-footer-actions">
+            {auth && (
+              <button
+                type="button"
+                className="resource-text-action"
+                onClick={handleReport}
+                disabled={reported}
+              >
+                {reported ? "Reported" : "Report broken link"}
+              </button>
+            )}
+          </div>
+        </footer>
+
+        {error && <p className="error resource-card-error">{error}</p>}
+      </article>
+
+      <div className="resource-detail-meta">
+        <span className="resource-detail-id">{resource.id}</span>
       </div>
 
-      <label>Description:</label>
-      <p className="description-text">{resource.description}</p>
-
-      <div className="actions">
-        {canDelete && (
-          <button
-            type="button"
-            className="delete-button"
-            onClick={handleDelete}
-          >
-            Delete
-          </button>
-        )}
-
-        {auth && (
-          <button type="button" onClick={handleReport} disabled={reported}>
-            {reported ? "Reported" : "Report broken link"}
-          </button>
-        )}
-      </div>
-
-      <p>
-        <label>Date Posted:&nbsp;</label>
-        <span>{new Date(resource.createdAt).toLocaleString()}</span>
-      </p>
-
-      <p>
-        <label>Submitted By:</label>
-        <span>{resource.submittedBy?.displayName}</span>
-        <span>{resource.submittedBy?.role}</span>
-      </p>
-
-      <p className="resource-id">{resource.id}</p>
+      {isDeleteModalOpen && (
+        <Modal
+          title="Delete resource"
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={confirmDelete}
+        >
+          <p className="modal-message">
+            Delete <strong>{resource.title}</strong>? This action cannot be
+            undone.
+          </p>
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="modal-secondary"
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={isDeleting}
+            >
+              <span>Cancel</span>
+              <kbd>Esc</kbd>
+            </button>
+            <button
+              type="button"
+              className="modal-danger"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
+              <span>{isDeleting ? "Deleting..." : "Delete resource"}</span>
+              <Trash2 size={17} aria-hidden="true" />
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
