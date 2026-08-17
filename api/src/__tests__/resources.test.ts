@@ -447,8 +447,8 @@ describe("POST /api/resources/:id/report", () => {
   });
 });
 
-describe("GET /api/resources/random", ()=>{
-  it("it gives a user a random resource", async ()=>{
+describe("GET /api/resources/random", () => {
+  it("it gives a user a random resource", async () => {
     const { token } = await registerAndLogin("reporter@example.com");
 
     await request(app)
@@ -458,19 +458,19 @@ describe("GET /api/resources/random", ()=>{
 
     const res = await request(app).get("/api/resources/random");
 
-      expect(res.status).toBe(200);
-      expect(res.body.resource).toBeDefined();
-      expect(res.body.resource.id).toBeDefined();
-      expect(res.body.resource.title).toBeDefined();
-      expect(res.body.resource.url).toBeDefined();
-  })
+    expect(res.status).toBe(200);
+    expect(res.body.resource).toBeDefined();
+    expect(res.body.resource.id).toBeDefined();
+    expect(res.body.resource.title).toBeDefined();
+    expect(res.body.resource.url).toBeDefined();
+  });
 
-  it("empty catalog returns 404", async ()=>{
+  it("empty catalog returns 404", async () => {
     const res = await request(app).get("/api/resources/random");
 
-      expect(res.status).toBe(404);
-  })
-})
+    expect(res.status).toBe(404);
+  });
+});
 
 describe("PATCH /api/resources/:id", () => {
   it("allows the original submitter to edit their resource", async () => {
