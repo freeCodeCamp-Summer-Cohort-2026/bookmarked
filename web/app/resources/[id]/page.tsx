@@ -193,10 +193,7 @@ export default function Page() {
     !!auth &&
     (auth.user.role === "moderator" ||
       auth.user.id === resource.submittedBy?.id);
-  const absoluteTime = format(
-    new Date(resource.createdAt),
-    "PPP 'at' p",
-  );
+  const absoluteTime = format(new Date(resource.createdAt), "PPP 'at' p");
 
   return (
     <div className="container">
@@ -240,7 +237,9 @@ export default function Page() {
           </span>
           <time dateTime={resource.createdAt} title={absoluteTime}>
             <Clock size={14} aria-hidden="true" />
-            {formatDistanceToNowStrict(new Date(resource.createdAt), { addSuffix: true })}
+            {formatDistanceToNowStrict(new Date(resource.createdAt), {
+              addSuffix: true,
+            })}
           </time>
         </div>
       </header>
@@ -410,7 +409,10 @@ export default function Page() {
           {isPreviewable(resource.url) ? (
             <div className="resource-detail-preview-frame">
               {!previewLoaded && (
-                <div className="resource-detail-preview-placeholder" aria-hidden="true">
+                <div
+                  className="resource-detail-preview-placeholder"
+                  aria-hidden="true"
+                >
                   <Loader2 className="resource-detail-spinner" size={18} />
                   Loading preview...
                 </div>
