@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import {
   CalendarDays,
   Check,
@@ -364,9 +365,9 @@ export default function ResourceCard({
               {reported ? "Reported" : "Report broken link"}
             </button>
           )}
-          <a className="resource-text-action" href={`/resources/${resource.id}`}>
+          <Link className="resource-text-action" href={`/resources/${resource.id}`}>
             View Details
-          </a>
+          </Link>
         </div>
       </footer>
 

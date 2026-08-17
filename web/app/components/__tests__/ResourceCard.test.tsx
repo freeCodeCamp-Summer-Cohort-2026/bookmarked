@@ -101,8 +101,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={null}
-        onUpdated={() => {}}
-        onDeleted={() => {}}
+        onUpdated={() => { }}
+        onDeleted={() => { }}
       />,
     );
 
@@ -117,13 +117,13 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={null}
-        onUpdated={() => {}}
-        onDeleted={() => {}}
+        onUpdated={() => { }}
+        onDeleted={() => { }}
       />,
     );
     expect(screen.getByRole("link", { name: "View Details" })).toHaveAttribute(
       "href",
-      `/${resource.id}`,
+      `/resources/${resource.id}`,
     );
   });
 
@@ -132,8 +132,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={null}
-        onUpdated={() => {}}
-        onDeleted={() => {}}
+        onUpdated={() => { }}
+        onDeleted={() => { }}
       />,
     );
 
@@ -150,8 +150,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={memberOwnerAuth}
-        onUpdated={() => {}}
-        onDeleted={() => {}}
+        onUpdated={() => { }}
+        onDeleted={() => { }}
       />,
     );
 
@@ -163,8 +163,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={memberOwnerAuth}
-        onUpdated={() => {}}
-        onDeleted={() => {}}
+        onUpdated={() => { }}
+        onDeleted={() => { }}
       />,
     );
 
@@ -180,8 +180,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={memberOtherAuth}
-        onUpdated={() => {}}
-        onDeleted={() => {}}
+        onUpdated={() => { }}
+        onDeleted={() => { }}
       />,
     );
 
@@ -195,8 +195,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={moderatorAuth}
-        onUpdated={() => {}}
-        onDeleted={() => {}}
+        onUpdated={() => { }}
+        onDeleted={() => { }}
       />,
     );
 
@@ -208,8 +208,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={null}
-        onUpdated={() => {}}
-        onDeleted={() => {}}
+        onUpdated={() => { }}
+        onDeleted={() => { }}
       />,
     );
 
@@ -223,8 +223,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={auth}
-        onUpdated={() => {}}
-        onDeleted={() => {}}
+        onUpdated={() => { }}
+        onDeleted={() => { }}
       />,
     );
 
