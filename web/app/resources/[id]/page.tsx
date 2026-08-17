@@ -16,8 +16,10 @@ import {
   Clock,
   Copy,
   ExternalLink,
+  Eye,
   FileText,
   Flag,
+  Loader2,
   Share2,
   Smile,
   Trash2,
@@ -36,6 +38,15 @@ function extractDomain(url: string): string {
     return new URL(url).hostname.replace(/^www\./, "");
   } catch {
     return url;
+  }
+}
+
+function isPreviewable(url: string): boolean {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
   }
 }
 
@@ -66,6 +77,8 @@ export default function Page() {
   const [status, setStatus] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [previewEnabled, setPreviewEnabled] = useState(false);
+  const [previewLoaded, setPreviewLoaded] = useState(false);
   const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -362,6 +375,68 @@ export default function Page() {
           </button>
         )}
       </div>
+
+      <label className="resource-detail-preview-toggle">
+        <input
+          type="checkbox"
+          checked={previewEnabled}
+          onChange={(e) => {
+            setPreviewEnabled(e.target.checked);
+            setPreviewLoaded(false);
+          }}
+        />
+        <Eye size={15} aria-hidden="true" />
+        Preview link
+      </label>
+
+      {previewEnabled && (
+        <div className="resource-detail-preview">
+          <div className="resource-detail-preview-header">
+            <span className="resource-detail-preview-heading">
+              <img
+                src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`}
+                alt=""
+                width={16}
+                height={16}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.currentTarget.style.visibility = "hidden";
+                }}
+              />
+              {domain}
+            </span>
+            <a
+              className="resource-text-action"
+              href={resource.url}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              Open in new tab
+            </a>
+          </div>
+          {isPreviewable(resource.url) ? (
+            <div className="resource-detail-preview-frame">
+              {!previewLoaded && (
+                <div className="resource-detail-preview-placeholder" aria-hidden="true">
+                  <Loader2 className="resource-detail-spinner" size={18} />
+                  Loading preview...
+                </div>
+              )}
+              <iframe
+                src={resource.url}
+                title={`Preview of ${resource.title}`}
+                onLoad={() => setPreviewLoaded(true)}
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          ) : (
+            <p className="hint resource-detail-preview-note">
+              This link can&apos;t be previewed.
+            </p>
+          )}
+        </div>
+      )}
 
       {error && (
         <p className="error resource-card-error" role="alert">
