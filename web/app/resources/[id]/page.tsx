@@ -8,13 +8,18 @@ import {
 import { Resource } from "@/lib/types";
 import { useAuth } from "@/lib/useAuth";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  CalendarDays,
+  ArrowLeft,
   Check,
   CircleUserRound,
+  Clock,
   Copy,
   ExternalLink,
+  FileText,
+  Flag,
+  Share2,
+  Smile,
   Trash2,
 } from "lucide-react";
 import {
@@ -24,6 +29,32 @@ import {
 import { Modal } from "../../components/Modal";
 import "./resource-page.css";
 
+const WORDS_PER_MINUTE = 200;
+
+function extractDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
+function relativeTime(iso: string): string {
+  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks}w ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(days / 365)}y ago`;
+}
+
 export default function Page() {
   const router = useRouter();
   const { auth } = useAuth();
@@ -32,8 +63,10 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [reported, setReported] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -46,8 +79,15 @@ export default function Page() {
       });
     return () => {
       ignore = true;
+      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
     };
   }, [id]);
+
+  function showStatus(message: string) {
+    if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+    setStatus(message);
+    statusTimerRef.current = setTimeout(() => setStatus(null), 2500);
+  }
 
   async function handleReport() {
     if (!auth || !resource) return;
@@ -59,6 +99,7 @@ export default function Page() {
       );
       setResource(updated);
       setReported(true);
+      showStatus("Reported - thanks for flagging");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
@@ -83,9 +124,30 @@ export default function Page() {
     try {
       await navigator.clipboard.writeText(resource.url);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1000);
+      setTimeout(() => setCopied(false), 1500);
+      showStatus("Link copied to clipboard");
     } catch {
       setError("Failed to copy link");
+    }
+  }
+
+  async function handleShare() {
+    if (!resource) return;
+    try {
+      if (typeof navigator.share === "function") {
+        await navigator.share({
+          title: resource.title,
+          text: resource.description || undefined,
+          url: resource.url,
+        });
+        showStatus("Link shared");
+      } else {
+        await navigator.clipboard.writeText(resource.url);
+        showStatus("Link copied to clipboard");
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      setError("Failed to share link");
     }
   }
 
@@ -123,55 +185,66 @@ export default function Page() {
   }
 
   const reactionGroups = groupReactions(resource.reactions || []);
+  const reactionTotal = (resource.reactions || []).length;
+  const wordCount = resource.description
+    ? resource.description.trim().split(/\s+/).filter(Boolean).length
+    : 0;
+  const readMinutes = Math.max(1, Math.ceil(wordCount / WORDS_PER_MINUTE));
+  const domain = extractDomain(resource.url);
   const canDelete =
     !!auth &&
     (auth.user.role === "moderator" ||
       auth.user.id === resource.submittedBy?.id);
+  const absoluteTime = new Date(resource.createdAt).toLocaleString();
 
   return (
     <div className="container">
       <a className="resource-detail-back" href="/">
-        &larr; Back
+        <ArrowLeft size={16} aria-hidden="true" />
+        Back to feed
       </a>
 
-      <article className="resource-card">
-        <header className="resource-card-header">
-          <div className="resource-heading">
-            <h1 className="resource-detail-title">
-              <a href={resource.url} target="_blank" rel="noreferrer noopener">
-                {resource.title}
-              </a>
-            </h1>
-            <span className="resource-detail-url">
-              <ExternalLink size={13} aria-hidden="true" />
-              <a href={resource.url} target="_blank" rel="noreferrer noopener">
-                {resource.url}
-              </a>
-            </span>
-            <span className="resource-author">
-              <CircleUserRound size={24} strokeWidth={1} aria-hidden="true" />
-              <span className="author">
-                {resource.submittedBy?.displayName || "Unknown"}
-              </span>
-            </span>
-          </div>
-          <div className="resource-card-controls">
-            <button
-              type="button"
-              className={`card-icon-button${copied ? " card-icon-button-success" : ""}`}
-              onClick={handleCopyLink}
-              aria-label={copied ? "Link copied" : "Copy link"}
-              title={copied ? "Link copied" : "Copy link"}
-            >
-              {copied ? (
-                <Check size={17} aria-hidden="true" />
-              ) : (
-                <Copy size={17} aria-hidden="true" />
-              )}
-            </button>
-          </div>
-        </header>
+      <header className="resource-detail-header">
+        <h1 className="resource-detail-title">
+          <a href={resource.url} target="_blank" rel="noreferrer noopener">
+            {resource.title}
+          </a>
+        </h1>
+        <div className="resource-detail-meta-row">
+          <span className="resource-detail-domain" title={resource.url}>
+            <img
+              src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`}
+              alt=""
+              width={16}
+              height={16}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                e.currentTarget.style.visibility = "hidden";
+              }}
+            />
+            <a href={resource.url} target="_blank" rel="noreferrer noopener">
+              {domain}
+            </a>
+          </span>
+          <span className="resource-detail-sep" aria-hidden="true">
+            &bull;
+          </span>
+          <span className="resource-detail-author">
+            <CircleUserRound size={16} strokeWidth={1.5} aria-hidden="true" />
+            {resource.submittedBy?.displayName || "Unknown"}
+          </span>
+          <span className="resource-detail-sep" aria-hidden="true">
+            &bull;
+          </span>
+          <time dateTime={resource.createdAt} title={absoluteTime}>
+            <Clock size={14} aria-hidden="true" />
+            {relativeTime(resource.createdAt)}
+          </time>
+        </div>
+      </header>
 
+      <article className="resource-card resource-detail-body">
         {resource.tags?.length > 0 && (
           <div className="tags">
             {resource.tags.map((tag) => (
@@ -190,65 +263,120 @@ export default function Page() {
           </div>
         )}
 
-        <div className="resource-card-toolbar">
-          <div className="reactions">
-            {Object.entries(reactionGroups).map(([emoji, count]) => (
-              <span key={emoji} className="reaction-count">
-                {emoji} {count}
-              </span>
-            ))}
-            {auth &&
-              REACTION_OPTIONS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  className="reaction-button"
-                  onClick={() => handleReact(emoji)}
-                  title={`React with ${emoji}`}
-                >
-                  {emoji}
-                </button>
-              ))}
-          </div>
-
-          {canDelete && (
-            <div className="resource-card-controls">
-              <button
-                type="button"
-                className="card-icon-button card-icon-button-danger"
-                onClick={() => setIsDeleteModalOpen(true)}
-                aria-label="Delete"
-                title="Delete resource"
-              >
-                <Trash2 size={17} aria-hidden="true" />
-              </button>
-            </div>
-          )}
+        <div className="resource-detail-stats">
+          <span className="resource-detail-stat" title="Total reactions">
+            <Smile size={14} aria-hidden="true" />
+            {reactionTotal} reaction{reactionTotal === 1 ? "" : "s"}
+          </span>
+          <span className="resource-detail-stat" title="Word count">
+            <FileText size={14} aria-hidden="true" />
+            {wordCount} word{wordCount === 1 ? "" : "s"}
+          </span>
+          <span className="resource-detail-stat" title="Estimated read time">
+            <Clock size={14} aria-hidden="true" />
+            {readMinutes} min read
+          </span>
         </div>
-
-        <footer className="resource-card-footer">
-          <time dateTime={resource.createdAt}>
-            <CalendarDays size={14} aria-hidden="true" />
-            {new Date(resource.createdAt).toLocaleString()}
-          </time>
-          <div className="resource-footer-actions">
-            {auth && (
-              <button
-                type="button"
-                className="resource-text-action"
-                onClick={handleReport}
-                disabled={reported}
-              >
-                {reported ? "Reported" : "Report broken link"}
-              </button>
-            )}
-          </div>
-        </footer>
-
-        {error && <p className="error resource-card-error">{error}</p>}
       </article>
 
-      <div className="resource-detail-meta">
+      <div className="resource-detail-reactions">
+        <div className="reactions">
+          {Object.entries(reactionGroups).map(([emoji, count]) => (
+            <span key={emoji} className="reaction-count">
+              {emoji} {count}
+            </span>
+          ))}
+          {auth &&
+            REACTION_OPTIONS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                className="reaction-button"
+                onClick={() => handleReact(emoji)}
+                title={`React with ${emoji}`}
+              >
+                {emoji}
+              </button>
+            ))}
+          {!auth && <span className="hint">Log in to react</span>}
+        </div>
+      </div>
+
+      <div
+        className="resource-detail-actions"
+        role="group"
+        aria-label="Resource actions"
+      >
+        <a
+          className="resource-detail-action resource-detail-action-primary"
+          href={resource.url}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          <ExternalLink size={16} aria-hidden="true" />
+          Visit link
+        </a>
+        <button
+          type="button"
+          className={`resource-detail-action${copied ? " resource-detail-action-active" : ""}`}
+          onClick={handleCopyLink}
+          aria-label={copied ? "Link copied" : "Copy link"}
+        >
+          {copied ? (
+            <Check size={16} aria-hidden="true" />
+          ) : (
+            <Copy size={16} aria-hidden="true" />
+          )}
+          {copied ? "Copied!" : "Copy"}
+        </button>
+        <button
+          type="button"
+          className="resource-detail-action"
+          onClick={handleShare}
+          aria-label="Share link"
+        >
+          <Share2 size={16} aria-hidden="true" />
+          Share
+        </button>
+        {auth && (
+          <button
+            type="button"
+            className="resource-detail-action"
+            onClick={handleReport}
+            disabled={reported}
+            aria-label={reported ? "Reported" : "Report broken link"}
+          >
+            <Flag size={16} aria-hidden="true" />
+            {reported ? "Reported" : "Report"}
+          </button>
+        )}
+        {canDelete && (
+          <button
+            type="button"
+            className="resource-detail-action resource-detail-action-danger"
+            onClick={() => setIsDeleteModalOpen(true)}
+            aria-label="Delete resource"
+          >
+            <Trash2 size={16} aria-hidden="true" />
+            Delete
+          </button>
+        )}
+      </div>
+
+      {error && (
+        <p className="error resource-card-error" role="alert">
+          {error}
+        </p>
+      )}
+
+      {status && (
+        <p className="resource-detail-status" role="status">
+          <Check size={14} aria-hidden="true" />
+          {status}
+        </p>
+      )}
+
+      <div className="resource-detail-footer">
         <span className="resource-detail-id">{resource.id}</span>
       </div>
 
