@@ -21,12 +21,9 @@ import {
   updateResource,
 } from "@/lib/api";
 import { AuthState, Reaction, Resource } from "@/lib/types";
+import ReactionPicker from "./ReactionPicker";
 import { Modal } from "./Modal";
 import { format } from "date-fns";
-
-// Starter emoji set - deliberately small. See the "add another reaction
-// emoji option" good-first-issue for extending this.
-export const REACTION_OPTIONS = ["👍", "⭐", "🔖"];
 
 export function groupReactions(reactions: Reaction[]): Record<string, number> {
   const groups: Record<string, number> = {};
@@ -39,14 +36,18 @@ export function groupReactions(reactions: Reaction[]): Record<string, number> {
 interface ResourceCardProps {
   resource: Resource;
   auth: AuthState | null;
+  reactionHistory: string[];
   onUpdated: (resource: Resource) => void;
+  onReactionSelected: (emoji: string) => void;
   onDeleted: (resourceId: string) => void;
 }
 
 export default function ResourceCard({
   resource,
   auth,
+  reactionHistory,
   onUpdated,
+  onReactionSelected,
   onDeleted,
 }: ResourceCardProps) {
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +141,7 @@ export default function ResourceCard({
         auth.token,
       );
       onUpdated(updated);
+      onReactionSelected(emoji);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
@@ -321,18 +323,10 @@ export default function ResourceCard({
               {emoji} {count}
             </span>
           ))}
-          {auth &&
-            REACTION_OPTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                className="reaction-button"
-                onClick={() => handleReact(emoji)}
-                title={`React with ${emoji}`}
-              >
-                {emoji}
-              </button>
-            ))}
+
+          {auth && (
+            <ReactionPicker history={reactionHistory} onSelect={handleReact} />
+          )}
         </div>
 
         {canDelete && (

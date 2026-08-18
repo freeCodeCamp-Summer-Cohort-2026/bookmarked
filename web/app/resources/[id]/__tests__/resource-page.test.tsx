@@ -1,12 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthState, Resource } from "@/lib/types";
-import { getResource, reportResource } from "@/lib/api";
+import { addReaction, getResource, reportResource } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
-
-import Page from "../page";
 import { useAuth } from "@/lib/useAuth";
-import { REACTION_OPTIONS } from "@/app/components/ResourceCard";
+import { useReactionHistory } from "@/lib/useReactionHistory";
+import Page from "../page";
+import { REACTION_OPTIONS } from "@/app/components/ReactionPicker";
 
 const resource: Resource = {
   id: "1",
@@ -35,9 +35,21 @@ const resource: Resource = {
   ],
 };
 
+const recordReaction = jest.fn();
+const auth: AuthState = {
+  token: "test-token",
+  user: {
+    id: "u2",
+    displayName: "Diego",
+    email: "d@example.com",
+    role: "member",
+  },
+};
+
 jest.mock("@/lib/api", () => ({
   getResource: jest.fn(),
   reportResource: jest.fn(),
+  addReaction: jest.fn(),
 })); // mock /lib/api call to 'getResource(id)'
 
 jest.mock("next/navigation", () => ({
@@ -47,7 +59,34 @@ jest.mock("next/navigation", () => ({
 
 jest.mock("@/lib/useAuth", () => ({
   useAuth: jest.fn(),
-})); // mock auth call
+}));
+
+jest.mock("@/lib/useReactionHistory", () => ({
+  useReactionHistory: jest.fn(),
+}));
+
+beforeEach(() => {
+  jest.clearAllMocks();
+
+  (useParams as jest.Mock).mockReturnValue({
+    id: resource.id,
+  });
+
+  (useRouter as jest.Mock).mockReturnValue({
+    push: jest.fn(),
+  });
+
+  (getResource as jest.Mock).mockResolvedValue({
+    resource,
+  });
+
+  (useReactionHistory as jest.Mock).mockReturnValue({
+    history: [],
+    recordReaction,
+  });
+
+  (reportResource as jest.Mock).mockResolvedValue({ resource });
+});
 
 const memberOwnerAuth: AuthState = {
   token: "member-owner-token",
@@ -78,13 +117,6 @@ const moderatorAuth: AuthState = {
     role: "moderator",
   },
 };
-
-beforeEach(() => {
-  (useParams as jest.Mock).mockReturnValue({ id: resource.id });
-  (useRouter as jest.Mock).mockReturnValue({ push: jest.fn() });
-  (getResource as jest.Mock).mockResolvedValue({ resource }); // mockResolvedValue because it loads the Page from the useEffect
-  (reportResource as jest.Mock).mockResolvedValue({ resource });
-});
 
 test("loads resource for expected id, do not show delete / reaction buttons when logged out", async () => {
   (useAuth as jest.Mock).mockReturnValue({ auth: null, ready: true });
@@ -159,4 +191,62 @@ auths.forEach((a) => {
       await screen.findByRole("button", { name: "Reported" }),
     ).toBeInTheDocument();
   });
+});
+
+test("records a reaction after a successful submission", async () => {
+  (useAuth as jest.Mock).mockReturnValue({
+    auth,
+    ready: true,
+  });
+
+  (addReaction as jest.Mock).mockResolvedValue({
+    resource,
+  });
+
+  render(<Page />);
+
+  await screen.findByText(resource.title);
+
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "⭐",
+    }),
+  );
+
+  await waitFor(() => {
+    expect(addReaction).toHaveBeenCalledWith(
+      {
+        resourceId: resource.id,
+        emoji: "⭐",
+      },
+      auth.token,
+    );
+
+    expect(recordReaction).toHaveBeenCalledWith("⭐");
+  });
+
+  expect(recordReaction).toHaveBeenCalledTimes(1);
+});
+
+test("does not record a reaction after a failed submission", async () => {
+  (useAuth as jest.Mock).mockReturnValue({
+    auth,
+    ready: true,
+  });
+
+  (addReaction as jest.Mock).mockRejectedValue(new Error("Submission failed"));
+
+  render(<Page />);
+
+  await screen.findByText(resource.title);
+
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "⭐",
+    }),
+  );
+
+  expect(await screen.findByText("Submission failed")).toBeInTheDocument();
+
+  expect(recordReaction).not.toHaveBeenCalled();
 });

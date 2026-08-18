@@ -30,6 +30,10 @@ import {
 } from "../../components/ResourceCard";
 import { Modal } from "../../components/Modal";
 import { format, formatDistanceToNowStrict } from "date-fns";
+import { useEffect, useState } from "react";
+import { groupReactions } from "../../components/ResourceCard";
+import ReactionPicker from "../../components/ReactionPicker";
+import { useReactionHistory } from "@/lib/useReactionHistory";
 import "./resource-page.css";
 
 const WORDS_PER_MINUTE = 200;
@@ -54,6 +58,9 @@ function isPreviewable(url: string): boolean {
 export default function Page() {
   const router = useRouter();
   const { auth } = useAuth();
+  const { history: reactionHistory, recordReaction } = useReactionHistory(
+    auth?.user.id ?? null,
+  );
   const { id } = useParams<{ id: string }>();
   const [resource, setResource] = useState<Resource | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -112,6 +119,7 @@ export default function Page() {
         auth.token,
       );
       setResource(updated);
+      recordReaction(emoji);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
@@ -286,19 +294,9 @@ export default function Page() {
               {emoji} {count}
             </span>
           ))}
-          {auth &&
-            REACTION_OPTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                className="reaction-button"
-                onClick={() => handleReact(emoji)}
-                title={`React with ${emoji}`}
-              >
-                {emoji}
-              </button>
-            ))}
-          {!auth && <span className="hint">Log in to react</span>}
+          {auth && (
+            <ReactionPicker history={reactionHistory} onSelect={handleReact} />
+          )}
         </div>
       </div>
 
