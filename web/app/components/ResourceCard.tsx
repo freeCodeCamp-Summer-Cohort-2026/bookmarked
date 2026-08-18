@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
+  FileCode,
   Pencil,
   Save,
   Trash2,
@@ -50,6 +51,7 @@ export default function ResourceCard({
 }: ResourceCardProps) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedMarkdown, setCopiedMarkdown] = useState(false);
   const reactionGroups = groupReactions(resource.reactions || []);
   const [isDescShortened, setIsDescShortened] = useState(
     resource.description.length > 200,
@@ -127,6 +129,18 @@ export default function ResourceCard({
       setTimeout(() => setCopied(false), 1000);
     } catch {
       setError("Failed to copy link");
+    }
+  }
+
+  async function handleCopyMarkdown() {
+    try {
+      await navigator.clipboard.writeText(
+        `[${resource.title}](${resource.url})`,
+      );
+      setCopiedMarkdown(true);
+      setTimeout(() => setCopiedMarkdown(false), 1000);
+    } catch {
+      setError("Failed to copy markdown");
     }
   }
 
@@ -289,6 +303,19 @@ export default function ResourceCard({
               <Check size={17} aria-hidden="true" />
             ) : (
               <Copy size={17} aria-hidden="true" />
+            )}
+          </button>
+          <button
+            type="button"
+            className={`card-icon-button${copiedMarkdown ? " card-icon-button-success" : ""}`}
+            onClick={handleCopyMarkdown}
+            aria-label={copiedMarkdown ? "Markdown copied" : "Copy markdown"}
+            title={copiedMarkdown ? "Markdown copied" : "Copy markdown"}
+          >
+            {copiedMarkdown ? (
+              <Check size={17} aria-hidden="true" />
+            ) : (
+              <FileCode size={17} aria-hidden="true" />
             )}
           </button>
           {isOwner && (

@@ -123,6 +123,30 @@ describe("ResourceCard", () => {
     expect(screen.getByText("beginner")).toBeInTheDocument();
   });
 
+  it("copies the resource as a markdown link", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={null}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
+        onUpdated={() => {}}
+        onDeleted={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy markdown" }));
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        "[MDN Async/Await Guide](https://developer.mozilla.org)",
+      ),
+    );
+  });
+
   test("navigates to the correct link when 'View Details' is clicked", () => {
     render(
       <ResourceCard
