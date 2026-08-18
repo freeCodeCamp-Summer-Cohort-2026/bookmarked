@@ -33,6 +33,10 @@ export default function ReactionPicker({
 }: ReactionPickerProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const quickReactions = getQuickReactions(history);
+  const handleDropdownSelection = (emoji: string) => {
+    onSelect(emoji);
+    setIsOpen(false);
+  };
 
   return (
     <div className="reaction-picker">
@@ -62,7 +66,7 @@ export default function ReactionPicker({
               key={emoji}
               type="button"
               className="reaction-button"
-              onClick={() => onSelect(emoji)}
+              onClick={() => handleDropdownSelection(emoji)}
             >
               {emoji}
             </button>

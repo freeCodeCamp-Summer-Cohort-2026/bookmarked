@@ -89,13 +89,20 @@ describe("ReactionPicker", () => {
 
     render(<ReactionPicker history={[]} onSelect={handleSelect} />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Toggle reaction menu" }),
-    );
+    const toggle = screen.getByRole("button", {
+      name: "Toggle reaction menu",
+    });
+
+    fireEvent.click(toggle);
 
     fireEvent.click(screen.getByRole("button", { name: "🔥" }));
 
     expect(handleSelect).toHaveBeenCalledWith("🔥");
     expect(handleSelect).toHaveBeenCalledTimes(1);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByRole("button", { name: "🔥" }),
+    ).not.toBeInTheDocument();
   });
 });
