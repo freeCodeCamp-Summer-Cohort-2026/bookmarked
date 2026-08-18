@@ -39,14 +39,14 @@ export default function AuthPanel({
   }
 
   function validateEmail() {
-    email.trim();
+    const trimmedEmail = email.trim();
 
-    if (!email) {
+    if (!trimmedEmail) {
       setError("Email is required.");
       return false;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(trimmedEmail)) {
       setError("Please enter a valid email.");
       return false;
     }
@@ -63,6 +63,7 @@ export default function AuthPanel({
       return;
     }
 
+    const trimmedEmail = email.trim();
     setLoading(true);
 
     if (mode === "register" && password !== confirmPassword) {
@@ -74,8 +75,8 @@ export default function AuthPanel({
     try {
       const result =
         mode === "login"
-          ? await login({ email, password })
-          : await register({ email, password, displayName });
+          ? await login({ email:trimmedEmail, password })
+          : await register({ email:trimmedEmail, password, displayName });
       onSignIn(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
