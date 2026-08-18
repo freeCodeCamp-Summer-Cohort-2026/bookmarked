@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { CornerDownLeft } from "lucide-react";
-import { ApiError, createResource } from "@/lib/api";
+import { ApiError, createResource, getTagCounts } from "@/lib/api";
 import { AuthState } from "@/lib/types";
 import { Modal } from "./Modal";
 
@@ -31,6 +31,31 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
   const [pendingDuplicate, setPendingDuplicate] =
     useState<PendingDuplicate | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const tagsFieldRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getTagCounts()
+      .then((res) => setAllTags(Object.keys(res.tagCounts)))
+      .catch(() => setAllTags([]));
+  }, []);
+
+  useEffect(() => {
+    if (!showSuggestions) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        tagsFieldRef.current &&
+        !tagsFieldRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [showSuggestions]);
 
   if (!auth) {
     return <p className="hint">Log in to share a resource.</p>;
@@ -75,6 +100,29 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
 
   function cancel() {
     setPendingDuplicate(null);
+  }
+
+  const tagParts = tagsInput.split(",");
+  const currentTag = tagParts[tagParts.length - 1].trim().toLowerCase();
+  const addedTags = tagParts
+    .slice(0, -1)
+    .map((tag) => tag.trim().toLowerCase());
+  const suggestions = currentTag
+    ? allTags.filter(
+        (tag) =>
+          tag.toLowerCase().includes(currentTag) &&
+          tag.toLowerCase() !== currentTag &&
+          !addedTags.includes(tag.toLowerCase()),
+      )
+    : [];
+
+  function selectSuggestion(tag: string) {
+    const kept = tagParts
+      .slice(0, -1)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    setTagsInput([...kept, tag].join(", ") + ", ");
+    setShowSuggestions(false);
   }
 
   async function confirmAnyway() {
@@ -126,12 +174,35 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
           />
           <span className="char-count">{description.length}/1000</span>
         </div>
-        <input
-          type="text"
-          placeholder="Tags, comma separated (e.g. javascript, beginner)"
-          value={tagsInput}
-          onChange={(e) => setTagsInput(e.target.value)}
-        />
+        <div className="tags-field" ref={tagsFieldRef}>
+          <input
+            type="text"
+            placeholder="Tags, comma separated (e.g. javascript, beginner)"
+            value={tagsInput}
+            onChange={(e) => {
+              setTagsInput(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            autoComplete="off"
+          />
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="tag-suggestions" role="listbox">
+              {suggestions.map((tag) => (
+                <li key={tag}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={false}
+                    onClick={() => selectSuggestion(tag)}
+                  >
+                    {tag}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <button type="submit">Share resource</button>
         {error && <p className="error">{error}</p>}
       </form>
