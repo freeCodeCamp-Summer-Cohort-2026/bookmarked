@@ -283,7 +283,11 @@ describe("POST /api/resources/:id/reactions rate limiting", () => {
     const resource = await request(app)
       .post("/api/resources")
       .set("Authorization", `Bearer ${user.token}`)
-      .send({ title: "MDN Docs", url: "https://developer.mozilla.org", tags: ["JS", " Beginner "] });
+      .send({
+        title: "MDN Docs",
+        url: "https://developer.mozilla.org",
+        tags: ["JS", " Beginner "],
+      });
 
     const resourceId = resource.body.resource.id;
     const route = `/api/resources/${resourceId}/reactions`;
@@ -307,7 +311,9 @@ describe("POST /api/resources/:id/reactions rate limiting", () => {
       .expect(429);
 
     // expect the error message to be something about too many requests
-    expect(throttleRes.body.error).toBe("Too many reactions requested, please try again later");
+    expect(throttleRes.body.error).toBe(
+      "Too many reactions requested, please try again later",
+    );
   });
 });
 

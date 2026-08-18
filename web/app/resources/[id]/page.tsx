@@ -24,13 +24,8 @@ import {
   Smile,
   Trash2,
 } from "lucide-react";
-import {
-  groupReactions,
-  REACTION_OPTIONS,
-} from "../../components/ResourceCard";
 import { Modal } from "../../components/Modal";
 import { format, formatDistanceToNowStrict } from "date-fns";
-import { useEffect, useState } from "react";
 import { groupReactions } from "../../components/ResourceCard";
 import ReactionPicker from "../../components/ReactionPicker";
 import { useReactionHistory } from "@/lib/useReactionHistory";
