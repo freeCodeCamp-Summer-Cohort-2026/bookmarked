@@ -145,6 +145,7 @@ export default function ResourceCard({
     }
   }
 
+
   async function confirmDelete() {
     if (!auth || !canDelete || isDeleting) return;
 
@@ -215,7 +216,7 @@ export default function ResourceCard({
               {isSaving ? "Saving..." : "Save changes"}
             </button>
           </div>
-          {error && <p className="error">{error}</p>}
+          {error && <p className="error">{error}</p>} 
         </form>
       </article>
     );
