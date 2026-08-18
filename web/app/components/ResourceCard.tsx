@@ -25,6 +25,7 @@ import { AuthState, Reaction, Resource } from "@/lib/types";
 import ReactionPicker from "./ReactionPicker";
 import { Modal } from "./Modal";
 import { format } from "date-fns";
+import { formatRelativeTime } from "../utils/formatRelativeTime";
 
 export function groupReactions(reactions: Reaction[]): Record<string, number> {
   const groups: Record<string, number> = {};
@@ -373,7 +374,7 @@ export default function ResourceCard({
       <footer className="resource-card-footer">
         <time dateTime={resource.createdAt}>
           <CalendarDays size={14} aria-hidden="true" />
-          {format(new Date(resource.createdAt), "PPP 'at' p")}
+          {formatRelativeTime(resource.createdAt)}
         </time>
         <div className="resource-footer-actions">
           {auth && (
