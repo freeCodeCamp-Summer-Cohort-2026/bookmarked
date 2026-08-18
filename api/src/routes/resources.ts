@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { prisma } from "../db";
 import { requireAuth } from "../middleware/auth";
-import { error } from "console";
+import { resourcesToCsv } from "../utils/csv";
 
 const router = express.Router();
 
@@ -12,6 +12,49 @@ const resourceInclude = {
     orderBy: { createdAt: "asc" as const },
   },
 };
+
+type ExportFormat = "csv" | "json";
+
+function isValidFormat(value: unknown): value is ExportFormat {
+  return value === "csv" || value === "json";
+}
+
+// GET /api/resources/export?format=csv|json
+router.get("/export", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const format: string =
+      typeof req.query.format === "string" ? req.query.format : "json";
+
+    if (!isValidFormat(format)) {
+      return res.status(400).json({ error: "format must be 'csv' or 'json'" });
+    }
+
+    const resources = await prisma.resource.findMany({
+      where: { submittedById: req.user!.id },
+      select: {
+        title: true,
+        url: true,
+        tags: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (format === "csv") {
+      const csv = resourcesToCsv(resources);
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="my-resources-${new Date().toISOString().slice(0, 10)}.csv"`,
+      );
+      return res.status(200).send(csv);
+    }
+
+    return res.status(200).json({ resources });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to export resources" });
+  }
+});
 
 // GET /api/resources?tag=<tag>&submittedBy=<userId>
 router.get("/", async (req: Request, res: Response) => {
@@ -37,22 +80,88 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/resources/leaderboard
+// Registered before "/:id" so it is not matched as a resource id.
+router.get("/leaderboard", async (_req: Request, res: Response) => {
+  try {
+    const grouped = await prisma.resource.groupBy({
+      by: ["submittedById"],
+      _count: { submittedById: true },
+      orderBy: { _count: { submittedById: "desc" } },
+    });
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: grouped.map((g) => g.submittedById) } },
+      select: { id: true, displayName: true, email: true },
+    });
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    const leaderboard = grouped.map((g) => ({
+      user: userById.get(g.submittedById),
+      count: g._count.submittedById,
+    }));
+
+    return res.json({ leaderboard });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to fetch leaderboard" });
+  }
+});
+
 // GET /api/resources/random
-router.get("/random", async (req:Request, res:Response)=>{
-  try{
-    const allResource= await prisma.resource.findMany({include: resourceInclude});
+// Registered before "/:id" so it is not matched as a resource id.
+router.get("/random", async (req: Request, res: Response) => {
+  try {
+    const allResource = await prisma.resource.findMany({
+      include: resourceInclude,
+    });
 
     if (allResource.length === 0) {
-      return res.status(404).json({error:"Resource not available"});
-    };
+      return res.status(404).json({ error: "Resource not available" });
+    }
 
-    const randomIndex= Math.floor(Math.random() * allResource.length);
+    const randomIndex = Math.floor(Math.random() * allResource.length);
 
-    const randomResource= allResource[randomIndex]
+    const randomResource = allResource[randomIndex];
 
-    return res.json({resource: randomResource});
-  } catch(err) {
+    return res.json({ resource: randomResource });
+  } catch (err) {
     return res.status(500).json({ error: "Failed to fetch random resource" });
+  }
+});
+
+// GET /api/resources/tag-counts
+// Registered before "/:id" so it is not matched as a resource id.
+router.get("/tag-counts", async (_req: Request, res: Response) => {
+  try {
+    const tagCounts = await prisma.resource.groupBy({
+      by: ["tags"],
+      _count: { tags: true },
+      orderBy: { _count: { tags: "desc" } },
+    });
+
+    if (tagCounts.length === 0) {
+      return res.json({ tagCounts: {} });
+    }
+
+    const flattenedTagCounts: Record<string, number> = {};
+
+    for (const group of tagCounts) {
+      for (const tag of group.tags) {
+        flattenedTagCounts[tag] =
+          (flattenedTagCounts[tag] || 0) + group._count.tags;
+      }
+    }
+
+    const sortedTagCounts = Object.fromEntries(
+      Object.entries(flattenedTagCounts).sort(
+        ([tagA, countA], [tagB, countB]) =>
+          countB - countA || tagA.localeCompare(tagB),
+      ),
+    );
+
+    return res.json({ tagCounts: sortedTagCounts });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to fetch tag counts" });
   }
 });
 
@@ -328,7 +437,7 @@ router.post("/:id/report", requireAuth, async (req: Request, res: Response) => {
       where: { id: req.params.id },
     });
     if (!resource) {
-      return res.status(404).json({ error: "Resource not found" });
+      return res.status(404).json({ error: "Resource is not found" });
     }
 
     const update = await prisma.resource.update({

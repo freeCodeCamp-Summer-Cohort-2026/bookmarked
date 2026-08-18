@@ -6,6 +6,7 @@ import { listResources } from "@/lib/api";
 import { AuthState, Resource } from "@/lib/types";
 import { useReactionHistory } from "@/lib/useReactionHistory";
 import ResourceCard from "./ResourceCard";
+import TagFilter from "./TagFilter";
 
 interface FeedProps {
   auth: AuthState | null;
@@ -100,17 +101,7 @@ export default function Feed({ auth, socket }: FeedProps) {
   return (
     <div className="feed">
       <div className="filter-bar">
-        <select
-          value={tagFilter}
-          onChange={(e) => setTagFilter(e.target.value)}
-        >
-          <option value="">All tags</option>
-          {tags.map((tag) => (
-            <option key={tag} value={tag}>
-              {tag}
-            </option>
-          ))}
-        </select>
+        <TagFilter tags={tags} value={tagFilter} onChange={setTagFilter} />
         {auth && (
           <label className="mine-toggle">
             <input

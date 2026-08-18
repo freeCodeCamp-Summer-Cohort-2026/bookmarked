@@ -64,7 +64,7 @@ locally first just means fewer surprises.
 ## 5. Open your PR
 
 - **Link your PR to its issue.** Put `Closes #<issue-number>` (or `Fixes
-  #<issue-number>`) somewhere in the PR description so it auto-links and
+#<issue-number>`) somewhere in the PR description so it auto-links and
   auto-closes on merge.
 - Describe what you changed and why, and how you tested it.
 - Keep the diff focused on the issue. Small, reviewable PRs get merged faster.

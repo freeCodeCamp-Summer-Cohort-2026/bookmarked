@@ -10,7 +10,7 @@ import {
   Pencil,
   Save,
   Trash2,
-  UserRound,
+  CircleUserRound,
   X,
 } from "lucide-react";
 import {
@@ -233,7 +233,7 @@ export default function ResourceCard({
             </a>
           </h3>
           <span className="resource-author">
-            <UserRound size={14} aria-hidden="true" />
+            <CircleUserRound size={24} strokeWidth={1} aria-hidden="true" />
             <span className="author">
               {resource.submittedBy?.displayName || "Unknown"}
             </span>
