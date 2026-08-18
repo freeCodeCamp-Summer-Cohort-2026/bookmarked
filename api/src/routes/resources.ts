@@ -13,8 +13,8 @@ const reactionsLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req: Request) => req.user!.id, // per-user rate limit but not per-IP, otherwise limitter would interfere with correct results
   message: {
-    error: "Too many reactions requested, please try again later"
-  }
+    error: "Too many reactions requested, please try again later",
+  },
 });
 
 const resourceInclude = {

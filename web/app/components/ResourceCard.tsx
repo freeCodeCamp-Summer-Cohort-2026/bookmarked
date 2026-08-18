@@ -1,12 +1,14 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import {
   CalendarDays,
   Check,
   ChevronDown,
   ChevronUp,
   Copy,
+  FileCode,
   Pencil,
   Save,
   Trash2,
@@ -22,6 +24,7 @@ import {
 import { AuthState, Reaction, Resource } from "@/lib/types";
 import ReactionPicker from "./ReactionPicker";
 import { Modal } from "./Modal";
+import { format } from "date-fns";
 
 export function groupReactions(reactions: Reaction[]): Record<string, number> {
   const groups: Record<string, number> = {};
@@ -50,6 +53,7 @@ export default function ResourceCard({
 }: ResourceCardProps) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedMarkdown, setCopiedMarkdown] = useState(false);
   const reactionGroups = groupReactions(resource.reactions || []);
   const [isDescShortened, setIsDescShortened] = useState(
     resource.description.length > 200,
@@ -130,6 +134,18 @@ export default function ResourceCard({
     }
   }
 
+  async function handleCopyMarkdown() {
+    try {
+      await navigator.clipboard.writeText(
+        `[${resource.title}](${resource.url})`,
+      );
+      setCopiedMarkdown(true);
+      setTimeout(() => setCopiedMarkdown(false), 1000);
+    } catch {
+      setError("Failed to copy markdown");
+    }
+  }
+
   async function handleReact(emoji: string) {
     if (!auth) return;
     setError(null);
@@ -144,44 +160,6 @@ export default function ResourceCard({
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
   }
-
-  const formatRelativeTime = (inputString: Date | string) => {
-    const date = new Date(inputString);
-
-    const now = new Date();
-
-    const diffInMs = now.getTime() - date.getTime();
-
-    if (diffInMs < 0) {
-      return "in future";
-    }
-
-    const diffInSeconds = diffInMs / 1000;
-    if (diffInSeconds < 60) {
-      return "just now";
-    }
-
-    const diffInMinutes = diffInSeconds / 60;
-    if (diffInMinutes < 60) {
-      const roundedMinutes = Math.round(diffInMinutes);
-      return `${roundedMinutes} minute${roundedMinutes === 1 ? "" : "s"} ago`;
-    }
-
-    const diffInHours = diffInMinutes / 60;
-    if (diffInHours < 24) {
-      const roundedHours = Math.round(diffInHours);
-      return `${roundedHours} hour${roundedHours === 1 ? "" : "s"} ago`;
-    }
-
-    const diffInDays = diffInHours / 24;
-    if (diffInDays < 7) {
-      const roundedDays = Math.round(diffInDays);
-      return `${roundedDays} day${roundedDays === 1 ? "" : "s"} ago`;
-    }
-
-    // fallback to full date
-    return date.toLocaleString("en-US");
-  };
 
   async function confirmDelete() {
     if (!auth || !canDelete || isDeleting) return;
@@ -291,6 +269,19 @@ export default function ResourceCard({
               <Copy size={17} aria-hidden="true" />
             )}
           </button>
+          <button
+            type="button"
+            className={`card-icon-button${copiedMarkdown ? " card-icon-button-success" : ""}`}
+            onClick={handleCopyMarkdown}
+            aria-label={copiedMarkdown ? "Markdown copied" : "Copy markdown"}
+            title={copiedMarkdown ? "Markdown copied" : "Copy markdown"}
+          >
+            {copiedMarkdown ? (
+              <Check size={17} aria-hidden="true" />
+            ) : (
+              <FileCode size={17} aria-hidden="true" />
+            )}
+          </button>
           {isOwner && (
             <button
               type="button"
@@ -382,7 +373,7 @@ export default function ResourceCard({
       <footer className="resource-card-footer">
         <time dateTime={resource.createdAt}>
           <CalendarDays size={14} aria-hidden="true" />
-          {formatRelativeTime(resource.createdAt)}
+          {format(new Date(resource.createdAt), "PPP 'at' p")}
         </time>
         <div className="resource-footer-actions">
           {auth && (
@@ -395,12 +386,12 @@ export default function ResourceCard({
               {reported ? "Reported" : "Report broken link"}
             </button>
           )}
-          <a
+          <Link
             className="resource-text-action"
             href={`/resources/${resource.id}`}
           >
             View Details
-          </a>
+          </Link>
         </div>
       </footer>
 

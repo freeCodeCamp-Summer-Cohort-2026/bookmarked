@@ -125,7 +125,7 @@ export default function AuthPanel({
         required
       />
 
-<div className="password-field">
+      <div className="password-field">
         <input
           type={showPassword ? "text" : "password"}
           placeholder="Password"
