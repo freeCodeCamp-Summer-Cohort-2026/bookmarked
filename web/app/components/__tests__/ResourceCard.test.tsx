@@ -1,6 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
 import ResourceCard, { groupReactions } from "../ResourceCard";
 import { AuthState, Resource } from "@/lib/types";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { addReaction } from "@/lib/api";
+
+jest.mock("@/lib/api");
 
 describe("groupReactions", () => {
   it("counts reactions by emoji", () => {
@@ -55,6 +58,12 @@ describe("ResourceCard", () => {
       },
     ],
   };
+  const reactionHistory: string[] = [];
+  const onReactionSelected = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   const memberOwnerAuth: AuthState = {
     token: "member-owner-token",
@@ -101,6 +110,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={null}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
         onUpdated={() => {}}
         onDeleted={() => {}}
       />,
@@ -117,13 +128,15 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={null}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
         onUpdated={() => {}}
         onDeleted={() => {}}
       />,
     );
     expect(screen.getByRole("link", { name: "View Details" })).toHaveAttribute(
       "href",
-      `/${resource.id}`,
+      `/resources/${resource.id}`,
     );
   });
 
@@ -132,6 +145,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={null}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
         onUpdated={() => {}}
         onDeleted={() => {}}
       />,
@@ -150,6 +165,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={memberOwnerAuth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
         onUpdated={() => {}}
         onDeleted={() => {}}
       />,
@@ -163,6 +180,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={memberOwnerAuth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
         onUpdated={() => {}}
         onDeleted={() => {}}
       />,
@@ -180,6 +199,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={memberOtherAuth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
         onUpdated={() => {}}
         onDeleted={() => {}}
       />,
@@ -195,6 +216,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={moderatorAuth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
         onUpdated={() => {}}
         onDeleted={() => {}}
       />,
@@ -208,6 +231,8 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={null}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
         onUpdated={() => {}}
         onDeleted={() => {}}
       />,
@@ -223,13 +248,75 @@ describe("ResourceCard", () => {
       <ResourceCard
         resource={resource}
         auth={auth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={onReactionSelected}
         onUpdated={() => {}}
         onDeleted={() => {}}
       />,
     );
 
-    expect(
-      screen.getByRole("button", { name: "Report broken link" }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Report broken link")).toBeInTheDocument();
+  });
+
+  it("records a reaction after a successful submission", async () => {
+    const handleUpdated = jest.fn();
+    const handleReactionSelected = jest.fn();
+
+    (addReaction as jest.Mock).mockResolvedValue({
+      resource,
+    });
+
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={auth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={handleReactionSelected}
+        onUpdated={handleUpdated}
+        onDeleted={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "⭐" }));
+
+    await waitFor(() => {
+      expect(addReaction).toHaveBeenCalledWith(
+        { resourceId: resource.id, emoji: "⭐" },
+        auth.token,
+      );
+      expect(handleUpdated).toHaveBeenCalledWith(resource);
+      expect(handleReactionSelected).toHaveBeenCalledWith("⭐");
+    });
+
+    expect(handleReactionSelected).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not update state after a failed emoji submission", async () => {
+    const handleUpdated = jest.fn();
+    const handleReactionSelected = jest.fn();
+
+    (addReaction as jest.Mock).mockRejectedValue(
+      new Error("Submission failed"),
+    );
+
+    render(
+      <ResourceCard
+        resource={resource}
+        auth={auth}
+        reactionHistory={reactionHistory}
+        onReactionSelected={handleReactionSelected}
+        onUpdated={handleUpdated}
+        onDeleted={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "⭐" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Submission failed")).toBeInTheDocument();
+    });
+
+    expect(handleUpdated).not.toHaveBeenCalled();
+    expect(handleReactionSelected).not.toHaveBeenCalled();
   });
 });

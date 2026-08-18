@@ -20,11 +20,8 @@ import {
   updateResource,
 } from "@/lib/api";
 import { AuthState, Reaction, Resource } from "@/lib/types";
+import ReactionPicker from "./ReactionPicker";
 import { Modal } from "./Modal";
-
-// Starter emoji set - deliberately small. See the "add another reaction
-// emoji option" good-first-issue for extending this.
-export const REACTION_OPTIONS = ["👍", "⭐", "🔖"];
 
 export function groupReactions(reactions: Reaction[]): Record<string, number> {
   const groups: Record<string, number> = {};
@@ -37,14 +34,18 @@ export function groupReactions(reactions: Reaction[]): Record<string, number> {
 interface ResourceCardProps {
   resource: Resource;
   auth: AuthState | null;
+  reactionHistory: string[];
   onUpdated: (resource: Resource) => void;
+  onReactionSelected: (emoji: string) => void;
   onDeleted: (resourceId: string) => void;
 }
 
 export default function ResourceCard({
   resource,
   auth,
+  reactionHistory,
   onUpdated,
+  onReactionSelected,
   onDeleted,
 }: ResourceCardProps) {
   const [error, setError] = useState<string | null>(null);
@@ -138,10 +139,49 @@ export default function ResourceCard({
         auth.token,
       );
       onUpdated(updated);
+      onReactionSelected(emoji);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
   }
+
+  const formatRelativeTime = (inputString: Date | string) => {
+    const date = new Date(inputString);
+
+    const now = new Date();
+
+    const diffInMs = now.getTime() - date.getTime();
+
+    if (diffInMs < 0) {
+      return "in future";
+    }
+
+    const diffInSeconds = diffInMs / 1000;
+    if (diffInSeconds < 60) {
+      return "just now";
+    }
+
+    const diffInMinutes = diffInSeconds / 60;
+    if (diffInMinutes < 60) {
+      const roundedMinutes = Math.round(diffInMinutes);
+      return `${roundedMinutes} minute${roundedMinutes === 1 ? "" : "s"} ago`;
+    }
+
+    const diffInHours = diffInMinutes / 60;
+    if (diffInHours < 24) {
+      const roundedHours = Math.round(diffInHours);
+      return `${roundedHours} hour${roundedHours === 1 ? "" : "s"} ago`;
+    }
+
+    const diffInDays = diffInHours / 24;
+    if (diffInDays < 7) {
+      const roundedDays = Math.round(diffInDays);
+      return `${roundedDays} day${roundedDays === 1 ? "" : "s"} ago`;
+    }
+
+    // fallback to full date
+    return date.toLocaleString("en-US");
+  };
 
   async function confirmDelete() {
     if (!auth || !canDelete || isDeleting) return;
@@ -318,18 +358,10 @@ export default function ResourceCard({
               {emoji} {count}
             </span>
           ))}
-          {auth &&
-            REACTION_OPTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                className="reaction-button"
-                onClick={() => handleReact(emoji)}
-                title={`React with ${emoji}`}
-              >
-                {emoji}
-              </button>
-            ))}
+
+          {auth && (
+            <ReactionPicker history={reactionHistory} onSelect={handleReact} />
+          )}
         </div>
 
         {canDelete && (
@@ -350,7 +382,7 @@ export default function ResourceCard({
       <footer className="resource-card-footer">
         <time dateTime={resource.createdAt}>
           <CalendarDays size={14} aria-hidden="true" />
-          {new Date(resource.createdAt).toLocaleString()}
+          {formatRelativeTime(resource.createdAt)}
         </time>
         <div className="resource-footer-actions">
           {auth && (
@@ -363,7 +395,10 @@ export default function ResourceCard({
               {reported ? "Reported" : "Report broken link"}
             </button>
           )}
-          <a className="resource-text-action" href={`/${resource.id}`}>
+          <a
+            className="resource-text-action"
+            href={`/resources/${resource.id}`}
+          >
             View Details
           </a>
         </div>
