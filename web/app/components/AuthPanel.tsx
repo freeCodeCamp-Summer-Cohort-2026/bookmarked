@@ -75,8 +75,8 @@ export default function AuthPanel({
     try {
       const result =
         mode === "login"
-          ? await login({ email:trimmedEmail, password })
-          : await register({ email:trimmedEmail, password, displayName });
+          ? await login({ email: trimmedEmail, password })
+          : await register({ email: trimmedEmail, password, displayName });
       onSignIn(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
