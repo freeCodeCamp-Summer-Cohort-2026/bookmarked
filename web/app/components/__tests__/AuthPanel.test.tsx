@@ -11,7 +11,7 @@ describe("AuthPanel email validation", () => {
         jest.clearAllMocks();
     });
 
-    test("shows an error for an invalid email", async () => {
+    test("shows an error for an invalid email", () => {
         render(<AuthPanel auth={null} onSignIn={() => { }} onSignOut={() => { }} />);
 
         const emailInput = screen.getByPlaceholderText("Email");
@@ -24,7 +24,7 @@ describe("AuthPanel email validation", () => {
         expect(screen.getByText("Please enter a valid email.")).toBeInTheDocument();
     });
 
-    test("shows an error for an empty email input", async () => {
+    test("shows an error for an empty email input", () => {
         render(<AuthPanel auth={null} onSignIn={() => { }} onSignOut={() => { }} />);
 
         const emailInput = screen.getByPlaceholderText("Email");
@@ -37,7 +37,7 @@ describe("AuthPanel email validation", () => {
         expect(screen.getByText("Email is required.")).toBeInTheDocument();
     });
 
-    test("shows an error for an email input with spaces", async () => {
+    test("shows an error for an email input with spaces", () => {
         render(<AuthPanel auth={null} onSignIn={() => { }} onSignOut={() => { }} />);
 
         const emailInput = screen.getByPlaceholderText("Email");
@@ -50,7 +50,7 @@ describe("AuthPanel email validation", () => {
         expect(screen.getByText("Email is required.")).toBeInTheDocument();
     });
 
-    test("does not show an error for a valid email", async () => {
+    test("does not show an error for a valid email", () => {
         render(<AuthPanel auth={null} onSignIn={() => { }} onSignOut={() => { }} />);
 
         const emailInput = screen.getByPlaceholderText("Email");
