@@ -181,6 +181,45 @@ section {
   align-self: flex-start;
 }
 
+.tags-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.tag-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.tag-suggestions button {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  align-self: stretch;
+}
+
+.tag-suggestions button:hover {
+  background: #eef4f0;
+}
+
 .filter-bar {
   display: flex;
   align-items: center;
