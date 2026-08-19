@@ -91,6 +91,15 @@ is its own table with a foreign key to both `Resource` and `User`, with a
 unique constraint on `(resourceId, userId, emoji)` to prevent duplicate
 reactions - see [`prisma/schema.prisma`](./api/prisma/schema.prisma).
 
+## User Actions
+| Action | Permitted Roles |
+| ---- | ----------- |
+| Create own resources | MODERATOR, MEMBER |
+| Edit own resources | MODERATOR, MEMBER |
+| Add/remove own reactions to resources | MODERATOR, MEMBER |
+| Delete own resources | MODERATOR, MEMBER |
+| Delete other resources | MODERATOR |
+
 ## Testing
 
 ```bash
