@@ -1,12 +1,14 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import {
   CalendarDays,
   Check,
   ChevronDown,
   ChevronUp,
   Copy,
+  FileCode,
   Pencil,
   Save,
   Trash2,
@@ -20,11 +22,9 @@ import {
   updateResource,
 } from "@/lib/api";
 import { AuthState, Reaction, Resource } from "@/lib/types";
+import ReactionPicker from "./ReactionPicker";
 import { Modal } from "./Modal";
-
-// Starter emoji set - deliberately small. See the "add another reaction
-// emoji option" good-first-issue for extending this.
-export const REACTION_OPTIONS = ["👍", "⭐", "🔖"];
+import { format } from "date-fns";
 
 export function groupReactions(reactions: Reaction[]): Record<string, number> {
   const groups: Record<string, number> = {};
@@ -37,18 +37,23 @@ export function groupReactions(reactions: Reaction[]): Record<string, number> {
 interface ResourceCardProps {
   resource: Resource;
   auth: AuthState | null;
+  reactionHistory: string[];
   onUpdated: (resource: Resource) => void;
+  onReactionSelected: (emoji: string) => void;
   onDeleted: (resourceId: string) => void;
 }
 
 export default function ResourceCard({
   resource,
   auth,
+  reactionHistory,
   onUpdated,
+  onReactionSelected,
   onDeleted,
 }: ResourceCardProps) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedMarkdown, setCopiedMarkdown] = useState(false);
   const reactionGroups = groupReactions(resource.reactions || []);
   const [isDescShortened, setIsDescShortened] = useState(
     resource.description.length > 200,
@@ -129,6 +134,18 @@ export default function ResourceCard({
     }
   }
 
+  async function handleCopyMarkdown() {
+    try {
+      await navigator.clipboard.writeText(
+        `[${resource.title}](${resource.url})`,
+      );
+      setCopiedMarkdown(true);
+      setTimeout(() => setCopiedMarkdown(false), 1000);
+    } catch {
+      setError("Failed to copy markdown");
+    }
+  }
+
   async function handleReact(emoji: string) {
     if (!auth) return;
     setError(null);
@@ -138,6 +155,7 @@ export default function ResourceCard({
         auth.token,
       );
       onUpdated(updated);
+      onReactionSelected(emoji);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
@@ -251,6 +269,19 @@ export default function ResourceCard({
               <Copy size={17} aria-hidden="true" />
             )}
           </button>
+          <button
+            type="button"
+            className={`card-icon-button${copiedMarkdown ? " card-icon-button-success" : ""}`}
+            onClick={handleCopyMarkdown}
+            aria-label={copiedMarkdown ? "Markdown copied" : "Copy markdown"}
+            title={copiedMarkdown ? "Markdown copied" : "Copy markdown"}
+          >
+            {copiedMarkdown ? (
+              <Check size={17} aria-hidden="true" />
+            ) : (
+              <FileCode size={17} aria-hidden="true" />
+            )}
+          </button>
           {isOwner && (
             <button
               type="button"
@@ -318,18 +349,10 @@ export default function ResourceCard({
               {emoji} {count}
             </span>
           ))}
-          {auth &&
-            REACTION_OPTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                className="reaction-button"
-                onClick={() => handleReact(emoji)}
-                title={`React with ${emoji}`}
-              >
-                {emoji}
-              </button>
-            ))}
+
+          {auth && (
+            <ReactionPicker history={reactionHistory} onSelect={handleReact} />
+          )}
         </div>
 
         {canDelete && (
@@ -350,7 +373,7 @@ export default function ResourceCard({
       <footer className="resource-card-footer">
         <time dateTime={resource.createdAt}>
           <CalendarDays size={14} aria-hidden="true" />
-          {new Date(resource.createdAt).toLocaleString()}
+          {format(new Date(resource.createdAt), "PPP 'at' p")}
         </time>
         <div className="resource-footer-actions">
           {auth && (
@@ -363,9 +386,12 @@ export default function ResourceCard({
               {reported ? "Reported" : "Report broken link"}
             </button>
           )}
-          <a className="resource-text-action" href={`/${resource.id}`}>
+          <Link
+            className="resource-text-action"
+            href={`/resources/${resource.id}`}
+          >
             View Details
-          </a>
+          </Link>
         </div>
       </footer>
 

@@ -181,6 +181,45 @@ section {
   align-self: flex-start;
 }
 
+.tags-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.tag-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.tag-suggestions button {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  align-self: stretch;
+}
+
+.tag-suggestions button:hover {
+  background: #eef4f0;
+}
+
 .filter-bar {
   display: flex;
   align-items: center;
@@ -404,6 +443,52 @@ section {
 
 .reaction-button:active {
   transform: translateY(1px) scale(0.96);
+}
+
+.reaction-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.reaction-dropdown {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(2rem, 1fr));
+  gap: 0.4rem;
+  min-width: 10rem;
+  padding: 0.6rem;
+  background: #fff;
+  border: 1px solid #d8dce2;
+  border-radius: 0.75rem;
+  box-shadow: 0 0.5rem 1.25rem rgba(31, 35, 48, 0.16);
+}
+
+.reaction-dropdown-toggle {
+  min-width: 2rem;
+  min-height: 1.75rem;
+  padding: 0.1rem 0.45rem;
+  background: white;
+  border: 1px solid #d8dce2;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    transform 80ms ease;
+  line-height: 1;
+}
+
+.reaction-dropdown-toggle:hover {
+  background: #f6f7f9;
+}
+
+.reaction-dropdown .reaction-button {
+  width: 100%;
+  min-width: 2rem;
 }
 
 .resource-card-footer {

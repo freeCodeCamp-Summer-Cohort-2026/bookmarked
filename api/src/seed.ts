@@ -84,11 +84,40 @@ const SEED_RESOURCES = [
   },
 ];
 
+const SEED_COLLECTIONS = [
+  {
+    ownerEmail: "amina@bookmarked.dev",
+    name: "Onboarding reading list",
+    description:
+      "The resources I send to every new engineer in their first two weeks.",
+    resourceTitles: [
+      "MDN: Async/Await Guide",
+      "freeCodeCamp: Responsive Web Design Curriculum",
+      "Explain It To Me Like I'm Five: Git Rebase",
+    ],
+  },
+  {
+    ownerEmail: "diego@bookmarked.dev",
+    name: "Frontend fundamentals",
+    description: "HTML, CSS and design resources I keep coming back to.",
+    resourceTitles: [
+      "freeCodeCamp: Responsive Web Design Curriculum",
+      "Refactoring UI",
+    ],
+  },
+  {
+    ownerEmail: "priya@bookmarked.dev",
+    name: "Testing & quality",
+    resourceTitles: ["Testing Library Cheatsheet"],
+  },
+];
+
 async function seed() {
   console.log("Connected to Postgres, seeding...");
 
   // Order matters: reactions/resources reference users via foreign keys.
   await prisma.reaction.deleteMany({});
+  await prisma.collection.deleteMany({});
   await prisma.resource.deleteMany({});
   await prisma.user.deleteMany({});
 
@@ -107,7 +136,7 @@ async function seed() {
     console.log(`Created user ${u.email} (${u.role}, password: ${u.password})`);
   }
 
-  const createdResources = [];
+  const resourcesByTitle: Record<string, { id: string }> = {};
   for (const r of SEED_RESOURCES) {
     const submittedBy = usersByEmail[r.submittedByEmail];
     const resource = await prisma.resource.create({
@@ -119,17 +148,43 @@ async function seed() {
         tags: r.tags,
       },
     });
-    createdResources.push(resource);
+    resourcesByTitle[r.title] = resource;
   }
-  console.log(`Created ${createdResources.length} resources`);
+  console.log(`Created ${Object.keys(resourcesByTitle).length} resources`);
+
+  for (const c of SEED_COLLECTIONS) {
+    const owner = usersByEmail[c.ownerEmail];
+    const resourceIds = c.resourceTitles
+      .map((title) => resourcesByTitle[title]?.id)
+      .filter(Boolean) as string[];
+
+    const collection = await prisma.collection.create({
+      data: {
+        name: c.name,
+        description: c.description ?? null,
+        userId: owner.id,
+        resources: {
+          connect: resourceIds.map((id) => ({ id })),
+        },
+      },
+    });
+
+    console.log(
+      `Created collection "${collection.name}" for ${c.ownerEmail} with ${resourceIds.length} resources`,
+    );
+  }
 
   // Sprinkle a couple of reactions on the first resource for demo purposes.
-  const [firstResource] = createdResources;
+  const firstResource = Object.values(resourcesByTitle)[0];
   if (firstResource) {
     const reactors = Object.values(usersByEmail).slice(1, 3);
     for (const reactor of reactors) {
       await prisma.reaction.create({
-        data: { emoji: "⭐", resourceId: firstResource.id, userId: reactor.id },
+        data: {
+          emoji: "⭐",
+          resourceId: firstResource.id,
+          userId: reactor.id,
+        },
       });
     }
   }

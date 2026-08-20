@@ -19,6 +19,10 @@ const mockedGetTagCounts = getTagCounts as jest.MockedFunction<
   typeof getTagCounts
 >;
 
+const mockedGetTagCounts = getTagCounts as jest.MockedFunction<
+  typeof getTagCounts
+>;
+
 const auth: AuthState = {
   token: "test-token",
   user: {

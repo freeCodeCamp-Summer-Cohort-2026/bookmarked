@@ -174,7 +174,6 @@ export async function exportResources(
   return { blob, filename };
 }
 
-
 export function removeReaction(
   input: { resourceId: string; reactionId: string },
   token: string,
