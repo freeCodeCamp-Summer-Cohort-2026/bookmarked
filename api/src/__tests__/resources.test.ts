@@ -3,6 +3,7 @@ import { createApp } from "../app";
 import { clearTestDB, disconnectTestDB } from "./setup";
 import { prisma } from "../db";
 import { hashPassword } from "../utils/password";
+import { Application } from "express";
 
 const app = createApp();
 
@@ -489,6 +490,10 @@ describe("POST /api/resources/:id/report", () => {
 });
 
 describe("GET /api/resources/random", () => {
+  let app: Application;
+  beforeEach(() => {
+    app = createApp();
+  });
   it("it gives a user a random resource", async () => {
     const { token } = await registerAndLogin("reporter@example.com");
 
@@ -514,6 +519,12 @@ describe("GET /api/resources/random", () => {
 });
 
 describe("PATCH /api/resources/:id", () => {
+  // init each app seperately so it doesn't get shared between all the tests. doing so will hit rate limiter and error with 429 instead of 404 like expected.
+  let app: Application;
+  beforeEach(() => {
+    app = createApp();
+  });
+
   it("allows the original submitter to edit their resource", async () => {
     const { token } = await registerAndLogin("editor@example.com");
 

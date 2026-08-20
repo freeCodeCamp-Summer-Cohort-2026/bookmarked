@@ -17,6 +17,16 @@ const reactionsLimiter = rateLimit({
   },
 });
 
+const resourceLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many requests to resources. Please try again later.",
+  },
+});
+
 const resourceInclude = {
   submittedBy: { select: { id: true, displayName: true, email: true } },
   reactions: {
@@ -196,7 +206,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 });
 
 // POST /api/resources
-router.post("/", requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, resourceLimiter, async (req: Request, res: Response) => {
   try {
     const { title, url, description, tags, confirmDuplicate } = req.body;
 
