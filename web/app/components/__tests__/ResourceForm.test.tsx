@@ -15,6 +15,9 @@ jest.mock("@/lib/api", () => {
 const mockedCreateResource = createResource as jest.MockedFunction<
   typeof createResource
 >;
+const mockedGetTagCounts = getTagCounts as jest.MockedFunction<
+  typeof getTagCounts
+>;
 
 const mockedGetTagCounts = getTagCounts as jest.MockedFunction<
   typeof getTagCounts
@@ -41,14 +44,92 @@ const createdResource: Resource = {
   reactions: [],
 };
 
-describe("ResourceForm duplicate confirmation", () => {
+describe("ResourceForm — logged out state", () => {
+  it("shows login message when logged out", () => {
+    render(<ResourceForm auth={null} />);
+
+    expect(
+      screen.getByText(/log in to share a resource/i)
+    ).toBeInTheDocument();
+
+    expect(screen.queryByRole("form")).not.toBeInTheDocument();
+  });
+});
+
+describe("ResourceForm — basic rendering", () => {
+  beforeEach(() => {
+    mockedGetTagCounts.mockReset();
+    mockedGetTagCounts.mockResolvedValue({ tagCounts: {} });
+  });
+
+  it("renders form fields when logged in", () => {
+    render(<ResourceForm auth={auth} />);
+
+    expect(screen.getByPlaceholderText("Title")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("https://...")).toBeInTheDocument();
+  });
+});
+
+describe("ResourceForm — successful submit", () => {
+  beforeEach(() => {
+    mockedCreateResource.mockReset();
+    mockedGetTagCounts.mockResolvedValue({ tagCounts: {} });
+  });
+
+  it("calls onPosted with new resource after submit", async () => {
+    const mockResponse = {
+      resource: {
+        id: 123,
+        title: "My Resource",
+        url: "https://example.com",
+        description: "A useful link",
+        tags: ["tag1", "tag2"],
+      },
+    };
+
+    mockedCreateResource.mockResolvedValue(mockResponse);
+
+    const onPosted = jest.fn();
+
+    render(<ResourceForm auth={auth} onPosted={onPosted} />);
+
+    fireEvent.change(screen.getByPlaceholderText("Title"), {
+      target: { value: "My Resource" },
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("https://..."), {
+      target: { value: "https://example.com" },
+    });
+
+    fireEvent.change(
+      screen.getByPlaceholderText("Why is this worth sharing? (optional)"),
+      { target: { value: "A useful link" } }
+    );
+
+    fireEvent.change(
+      screen.getByPlaceholderText(
+        "Tags, comma separated (e.g. javascript, beginner)"
+      ),
+      { target: { value: "tag1, tag2" } }
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Share resource" }));
+
+    await waitFor(() => {
+      expect(mockedCreateResource).toHaveBeenCalled();
+      expect(onPosted).toHaveBeenCalledWith(mockResponse.resource);
+    });
+  });
+});
+
+describe("ResourceForm — duplicate confirmation flow", () => {
   beforeEach(() => {
     mockedCreateResource.mockReset();
     mockedGetTagCounts.mockReset();
     mockedGetTagCounts.mockResolvedValue({ tagCounts: {} });
   });
 
-  it("retries with the original draft when the user confirms", async () => {
+  it("retries with confirmDuplicate when user confirms", async () => {
     mockedCreateResource
       .mockRejectedValueOnce(
         new ApiError(
@@ -60,8 +141,8 @@ describe("ResourceForm duplicate confirmation", () => {
               url: "https://example.com/shared",
             },
           },
-          "A resource with this URL already exists",
-        ),
+          "A resource with this URL already exists"
+        )
       )
       .mockResolvedValueOnce({ resource: createdResource });
 
@@ -75,25 +156,27 @@ describe("ResourceForm duplicate confirmation", () => {
     });
     fireEvent.change(
       screen.getByPlaceholderText("Why is this worth sharing? (optional)"),
-      { target: { value: "Keep my description" } },
+      { target: { value: "Keep my description" } }
     );
     fireEvent.change(
       screen.getByPlaceholderText(
-        "Tags, comma separated (e.g. javascript, beginner)",
+        "Tags, comma separated (e.g. javascript, beginner)"
       ),
-      { target: { value: "typescript, testing" } },
+      { target: { value: "typescript, testing" } }
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Share resource" }));
 
     expect(
-      await screen.findByRole("dialog", { name: "Duplicate resource" }),
+      await screen.findByRole("dialog", { name: "Duplicate resource" })
     ).toBeInTheDocument();
+
     expect(screen.getByText("Existing resource")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Add anyway/i }));
 
     await waitFor(() => expect(mockedCreateResource).toHaveBeenCalledTimes(2));
+
     expect(mockedCreateResource).toHaveBeenNthCalledWith(
       2,
       {
@@ -103,12 +186,15 @@ describe("ResourceForm duplicate confirmation", () => {
         tags: ["typescript", "testing"],
         confirmDuplicate: true,
       },
-      auth.token,
+      auth.token
     );
   });
 });
 
-describe("ResourceForm tag autocomplete", () => {
+describe("ResourceForm — tag autocomplete", () => {
+  const tagsPlaceholder =
+    "Tags, comma separated (e.g. javascript, beginner)";
+
   beforeEach(() => {
     mockedCreateResource.mockReset();
     mockedGetTagCounts.mockReset();
@@ -117,9 +203,7 @@ describe("ResourceForm tag autocomplete", () => {
     });
   });
 
-  const tagsPlaceholder = "Tags, comma separated (e.g. javascript, beginner)";
-
-  it("suggests existing tags and inserts the one selected", async () => {
+  it("suggests existing tags and inserts selected one", async () => {
     render(<ResourceForm auth={auth} />);
 
     const tagsInput = screen.getByPlaceholderText(tagsPlaceholder);
@@ -128,21 +212,25 @@ describe("ResourceForm tag autocomplete", () => {
     const suggestion = await screen.findByRole("option", {
       name: "javascript",
     });
+
     fireEvent.click(suggestion);
 
     expect((tagsInput as HTMLInputElement).value).toBe("javascript, ");
     expect(
-      screen.queryByRole("option", { name: "javascript" }),
+      screen.queryByRole("option", { name: "javascript" })
     ).not.toBeInTheDocument();
   });
 
-  it("keeps already-typed tags when selecting a suggestion", async () => {
+  it("keeps already typed tags when selecting a suggestion", async () => {
     render(<ResourceForm auth={auth} />);
 
     const tagsInput = screen.getByPlaceholderText(tagsPlaceholder);
     fireEvent.change(tagsInput, { target: { value: "react, test" } });
 
-    const suggestion = await screen.findByRole("option", { name: "testing" });
+    const suggestion = await screen.findByRole("option", {
+      name: "testing",
+    });
+
     fireEvent.click(suggestion);
 
     expect((tagsInput as HTMLInputElement).value).toBe("react, testing, ");

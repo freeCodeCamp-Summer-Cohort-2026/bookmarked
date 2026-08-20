@@ -3,11 +3,12 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { CornerDownLeft } from "lucide-react";
 import { ApiError, createResource, getTagCounts } from "@/lib/api";
-import { AuthState } from "@/lib/types";
+import { AuthState, Resource } from "@/lib/types";
 import { Modal } from "./Modal";
 
 interface ResourceFormProps {
   auth: AuthState | null;
+  onPosted?: (resource: Resource) => void;
 }
 
 interface ResourceDraft {
@@ -22,12 +23,13 @@ interface PendingDuplicate {
   existingTitle: string;
 }
 
-export default function ResourceForm({ auth }: ResourceFormProps) {
+export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [error, setError] = useState<string | null>(null);
+
   const [pendingDuplicate, setPendingDuplicate] =
     useState<PendingDuplicate | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -57,6 +59,33 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [showSuggestions]);
 
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const tagsFieldRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getTagCounts()
+      .then((res) => setAllTags(Object.keys(res.tagCounts)))
+      .catch(() => setAllTags([]));
+  }, []);
+
+  useEffect(() => {
+    if (!showSuggestions) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        tagsFieldRef.current &&
+        !tagsFieldRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () =>
+      document.removeEventListener("pointerdown", handlePointerDown);
+  }, [showSuggestions]);
+
   if (!auth) {
     return <p className="hint">Log in to share a resource.</p>;
   }
@@ -67,8 +96,6 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
     e.preventDefault();
     setError(null);
 
-    // NOTE: no loading state here yet while the request is in flight -
-    // see the "add a loading state to the resource form" issue.
     const tags = tagsInput
       .split(",")
       .map((tag) => tag.trim())
@@ -77,7 +104,10 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
     const input = { title, url, description, tags };
 
     try {
-      await createResource(input, token);
+      const { resource } = await createResource(input, token);
+
+      onPosted?.(resource);
+
       setTitle("");
       setUrl("");
       setDescription("");
@@ -91,7 +121,6 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
               ? err.data.duplicate.title
               : title,
         });
-        setError(null);
         return;
       }
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -130,11 +159,15 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
 
     setIsConfirming(true);
     setError(null);
+
     try {
-      await createResource(
+      const { resource } = await createResource(
         { ...pendingDuplicate.input, confirmDuplicate: true },
         token,
       );
+
+      onPosted?.(resource);
+
       setTitle("");
       setUrl("");
       setDescription("");
@@ -145,6 +178,31 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
     } finally {
       setIsConfirming(false);
     }
+  }
+
+  const tagParts = tagsInput.split(",");
+  const currentTag = tagParts[tagParts.length - 1].trim().toLowerCase();
+  const addedTags = tagParts
+    .slice(0, -1)
+    .map((tag) => tag.trim().toLowerCase());
+
+  const suggestions = currentTag
+    ? allTags.filter(
+        (tag) =>
+          tag.toLowerCase().includes(currentTag) &&
+          tag.toLowerCase() !== currentTag &&
+          !addedTags.includes(tag.toLowerCase()),
+      )
+    : [];
+
+  function selectSuggestion(tag: string) {
+    const kept = tagParts
+      .slice(0, -1)
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    setTagsInput([...kept, tag].join(", ") + ", ");
+    setShowSuggestions(false);
   }
 
   return (
@@ -158,6 +216,7 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
           maxLength={200}
           required
         />
+
         <input
           type="text"
           placeholder="https://..."
@@ -165,6 +224,7 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
           onChange={(e) => setUrl(e.target.value)}
           required
         />
+
         <div className="description-field">
           <textarea
             placeholder="Why is this worth sharing? (optional)"
@@ -174,6 +234,7 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
           />
           <span className="char-count">{description.length}/1000</span>
         </div>
+
         <div className="tags-field" ref={tagsFieldRef}>
           <input
             type="text"
@@ -186,6 +247,7 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
             onFocus={() => setShowSuggestions(true)}
             autoComplete="off"
           />
+
           {showSuggestions && suggestions.length > 0 && (
             <ul className="tag-suggestions" role="listbox">
               {suggestions.map((tag) => (
@@ -203,9 +265,11 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
             </ul>
           )}
         </div>
+
         <button type="submit">Share resource</button>
         {error && <p className="error">{error}</p>}
       </form>
+
       {pendingDuplicate && (
         <Modal
           title="Duplicate resource"
@@ -216,6 +280,7 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
             A resource titled <strong>{pendingDuplicate.existingTitle}</strong>{" "}
             already uses this URL. Do you want to add your resource anyway?
           </p>
+
           <div className="modal-actions">
             <button
               type="button"
@@ -226,6 +291,7 @@ export default function ResourceForm({ auth }: ResourceFormProps) {
               <span>Cancel</span>
               <kbd>Esc</kbd>
             </button>
+
             <button
               type="button"
               className="modal-confirm"
