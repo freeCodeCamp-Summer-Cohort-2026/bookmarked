@@ -7,6 +7,7 @@ import AuthPanel from "./components/AuthPanel";
 import ResourceForm from "./components/ResourceForm";
 import Feed from "./components/Feed";
 import DownloadMenu from "./components/DownloadMenu";
+import Collections from "./components/collections/Collections";
 import { useSocket } from "@/lib/useSocket";
 
 export default function HomePage() {
@@ -23,6 +24,13 @@ export default function HomePage() {
       <section>
         <h2>Share a resource</h2>
         <ResourceForm auth={auth} />
+      </section>
+
+      <section>
+        <div className="section-header">
+          <h2>My collections</h2>
+        </div>
+        <Collections auth={auth} />
       </section>
 
       <section>

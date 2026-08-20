@@ -945,3 +945,212 @@ section {
   color: #c62828;
   font-size: 0.8rem;
 }
+
+.collections,
+.collection-list,
+.collection-resource-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.collection-form,
+.collection-card,
+.collection-add-form,
+.collection-resource-card {
+  background: #fff;
+  border: 1px solid #e0e0e8;
+  border-radius: 10px;
+}
+
+.collection-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1rem;
+}
+
+.collection-form-heading,
+.collection-card-heading,
+.collection-card-actions,
+.collection-card-footer,
+.collection-add-form,
+.collection-page-header,
+.collection-resource-card,
+.collection-back,
+.collection-resource-card h3 a {
+  display: flex;
+  align-items: center;
+}
+
+.collection-form-heading {
+  gap: 0.45rem;
+  color: #1e6b41;
+}
+
+.collection-form-heading h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.collection-form input,
+.collection-form textarea,
+.collection-modal-form input,
+.collection-modal-form textarea,
+.collection-add-form select {
+  width: 100%;
+  padding: 0.55rem;
+  border: 1px solid #cbd0d8;
+  border-radius: 5px;
+  font: inherit;
+}
+
+.collection-form textarea,
+.collection-modal-form textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.collection-form button,
+.collection-add-form button,
+.modal-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 0;
+  border-radius: 5px;
+  padding: 0.55rem 0.85rem;
+  background: #2f8f5b;
+  color: #fff;
+  font: 600 0.9rem var(--font-ui);
+  cursor: pointer;
+}
+
+.collection-form button {
+  align-self: flex-start;
+}
+
+.collection-form button:disabled,
+.collection-add-form button:disabled,
+.modal-primary:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.collection-card {
+  padding: 1rem;
+}
+
+.collection-card-heading,
+.collection-page-header,
+.collection-resource-card {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.collection-card-heading h3,
+.collection-resource-card h3 {
+  margin: 0;
+}
+
+.collection-card-heading p,
+.collection-resource-card p {
+  margin: 0.4rem 0 0;
+  color: #5b6470;
+  font-size: 0.9rem;
+}
+
+.collection-card-actions {
+  align-self: flex-start;
+  gap: 0.35rem;
+}
+
+.collection-card-footer {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #edf0f3;
+  color: #69717d;
+  font: 0.8rem var(--font-ui);
+}
+
+.collection-card-footer span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.collection-card-footer a {
+  margin-left: auto;
+  color: #1e6b41;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.collection-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.collection-back {
+  width: fit-content;
+  gap: 0.35rem;
+  color: #1e6b41;
+  font: 600 0.9rem var(--font-ui);
+  text-decoration: none;
+}
+
+.collection-page-header {
+  margin-top: 1.25rem;
+}
+
+.collection-page-header h1 {
+  margin: 0;
+}
+
+.collection-resource-count {
+  flex: none;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  background: #e6f4eb;
+  color: #1e6b41;
+  font: 600 0.8rem var(--font-ui);
+}
+
+.collection-add-form {
+  gap: 0.65rem;
+  padding: 0.75rem;
+}
+
+.collection-add-form select {
+  flex: 1;
+  min-width: 0;
+}
+
+.collection-resource-card {
+  padding: 1rem;
+}
+
+.collection-resource-card h3 a {
+  gap: 0.35rem;
+  color: #1b386d;
+}
+
+.collection-resource-card .tags {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 500px) {
+  .collection-add-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .collection-card-footer a {
+    width: 100%;
+    margin-left: 0;
+  }
+}

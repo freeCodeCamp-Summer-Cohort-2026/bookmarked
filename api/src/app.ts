@@ -3,6 +3,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/auth";
 import resourcesRoutes from "./routes/resources";
+import collectionsRoutes from "./routes/collections";
 
 export function createApp(): Application {
   const app = express();
@@ -25,6 +26,7 @@ export function createApp(): Application {
 
   app.use("/api/auth", writeLimiter, authRoutes);
   app.use("/api/resources", resourcesRoutes);
+  app.use("/api/collections", collectionsRoutes);
 
   app.use((req: Request, res: Response) => {
     res.status(404).json({ error: "Not found" });

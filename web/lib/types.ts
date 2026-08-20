@@ -25,6 +25,18 @@ export interface Resource {
   confirmDuplicate?: boolean;
 }
 
+export interface Collection {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    resources: number;
+  };
+  resources?: Resource[];
+}
+
 export interface AuthState {
   token: string;
   user: User;
