@@ -79,6 +79,12 @@ export function listResources(
   return request<{ resources: Resource[] }>(`/api/resources${query}`);
 }
 
+export function getTagCounts() {
+  return request<{ tagCounts: Record<string, number> }>(
+    "/api/resources/tag-counts",
+  );
+}
+
 export function createResource(
   input: {
     title: string;

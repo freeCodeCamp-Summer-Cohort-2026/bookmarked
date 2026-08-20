@@ -1,14 +1,26 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { CornerDownLeft } from "lucide-react";
-import { ApiError, createResource } from "@/lib/api";
-import { AuthState } from "@/lib/types";
+import { ApiError, createResource, getTagCounts } from "@/lib/api";
+import { AuthState, Resource } from "@/lib/types";
 import { Modal } from "./Modal";
 
 interface ResourceFormProps {
   auth: AuthState | null;
   onPosted?: (resource: Resource) => void;
+}
+
+interface ResourceDraft {
+  title: string;
+  url: string;
+  description: string;
+  tags: string[];
+}
+
+interface PendingDuplicate {
+  input: ResourceDraft;
+  existingTitle: string;
 }
 
 export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
@@ -17,9 +29,37 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
   const [description, setDescription] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [error, setError] = useState<string | null>(null);
+
   const [pendingDuplicate, setPendingDuplicate] =
     useState<PendingDuplicate | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const tagsFieldRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getTagCounts()
+      .then((res) => setAllTags(Object.keys(res.tagCounts)))
+      .catch(() => setAllTags([]));
+  }, []);
+
+  useEffect(() => {
+    if (!showSuggestions) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        tagsFieldRef.current &&
+        !tagsFieldRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () =>
+      document.removeEventListener("pointerdown", handlePointerDown);
+  }, [showSuggestions]);
 
   if (!auth) {
     return <p className="hint">Log in to share a resource.</p>;
@@ -39,7 +79,10 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
     const input = { title, url, description, tags };
 
     try {
-      await createResource(input, token);
+      const { resource } = await createResource(input, token);
+
+      onPosted?.(resource);
+
       setTitle("");
       setUrl("");
       setDescription("");
@@ -53,7 +96,6 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
               ? err.data.duplicate.title
               : title,
         });
-        setError(null);
         return;
       }
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -69,16 +111,15 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
 
     setIsConfirming(true);
     setError(null);
+
     try {
       const { resource } = await createResource(
-        { title, url, description, tags },
-        auth.token
+        { ...pendingDuplicate.input, confirmDuplicate: true },
+        token,
       );
 
-      // notify parent
       onPosted?.(resource);
 
-      // reset fields
       setTitle("");
       setUrl("");
       setDescription("");
@@ -91,33 +132,96 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
     }
   }
 
+  const tagParts = tagsInput.split(",");
+  const currentTag = tagParts[tagParts.length - 1].trim().toLowerCase();
+  const addedTags = tagParts
+    .slice(0, -1)
+    .map((tag) => tag.trim().toLowerCase());
+
+  const suggestions = currentTag
+    ? allTags.filter(
+        (tag) =>
+          tag.toLowerCase().includes(currentTag) &&
+          tag.toLowerCase() !== currentTag &&
+          !addedTags.includes(tag.toLowerCase()),
+      )
+    : [];
+
+  function selectSuggestion(tag: string) {
+    const kept = tagParts
+      .slice(0, -1)
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    setTagsInput([...kept, tag].join(", ") + ", ");
+    setShowSuggestions(false);
+  }
+
   return (
-    <form role="form" className="resource-form" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        maxLength={200}
-        required
-      />
-      <input
-        type="text"
-        placeholder="https://..."
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        required
-      />
-      <div className="description-field">
-        <textarea
-          placeholder="Why is this worth sharing? (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          maxLength={1000}
+    <>
+      <form className="resource-form" onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={200}
+          required
         />
+
+        <input
+          type="text"
+          placeholder="https://..."
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          required
+        />
+
+        <div className="description-field">
+          <textarea
+            placeholder="Why is this worth sharing? (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={1000}
+          />
+          <span className="char-count">{description.length}/1000</span>
+        </div>
+
+        <div className="tags-field" ref={tagsFieldRef}>
+          <input
+            type="text"
+            placeholder="Tags, comma separated (e.g. javascript, beginner)"
+            value={tagsInput}
+            onChange={(e) => {
+              setTagsInput(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            autoComplete="off"
+          />
+
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="tag-suggestions" role="listbox">
+              {suggestions.map((tag) => (
+                <li key={tag}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={false}
+                    onClick={() => selectSuggestion(tag)}
+                  >
+                    {tag}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <button type="submit">Share resource</button>
         {error && <p className="error">{error}</p>}
       </form>
+
       {pendingDuplicate && (
         <Modal
           title="Duplicate resource"
@@ -128,6 +232,7 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
             A resource titled <strong>{pendingDuplicate.existingTitle}</strong>{" "}
             already uses this URL. Do you want to add your resource anyway?
           </p>
+
           <div className="modal-actions">
             <button
               type="button"
@@ -138,6 +243,7 @@ export default function ResourceForm({ auth, onPosted }: ResourceFormProps) {
               <span>Cancel</span>
               <kbd>Esc</kbd>
             </button>
+
             <button
               type="button"
               className="modal-confirm"
