@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Socket } from "socket.io-client";
-import { listResources } from "@/lib/api";
+import { listResources, listTrendingResources } from "@/lib/api";
 import { AuthState, Resource } from "@/lib/types";
 import { useReactionHistory } from "@/lib/useReactionHistory";
 import ResourceCard from "./ResourceCard";
@@ -18,6 +18,7 @@ export default function Feed({ auth, socket }: FeedProps) {
   const [tagFilter, setTagFilter] = useState("");
   const [mineOnly, setMineOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [days, setDays] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const { history: reactionHistory, recordReaction } = useReactionHistory(
     auth?.user.id ?? null,
@@ -33,6 +34,7 @@ export default function Feed({ auth, socket }: FeedProps) {
     listResources({
       tag: tagFilter || undefined,
       submittedBy: mineOnly && auth ? auth.user.id : undefined,
+      days: days,
     })
       .then(({ resources: fetched }) => {
         if (!cancelled) setResources(fetched);
@@ -48,14 +50,17 @@ export default function Feed({ auth, socket }: FeedProps) {
     return () => {
       cancelled = true;
     };
-  }, [tagFilter, mineOnly, auth]);
+  }, [tagFilter, mineOnly, auth, days]);
 
   useEffect(() => {
     if (!socket) return;
 
     function handleCreated(resource: Resource) {
+      if (days !== null) return;
+
       const matchesMineOnlyFilter =
         !mineOnly || (auth && resource?.submittedBy?.id === auth.user.id);
+
       const matchesTagFilter =
         !tagFilter || (resource.tags && resource.tags.includes(tagFilter));
 
@@ -76,7 +81,7 @@ export default function Feed({ auth, socket }: FeedProps) {
       socket.off("resource:created", handleCreated);
       socket.off("resource:updated", handleUpdated);
     };
-  }, [socket, auth, mineOnly, tagFilter]);
+  }, [socket, auth, mineOnly, tagFilter, days]);
 
   const tags = useMemo(() => {
     const set = new Set<string>();
@@ -102,6 +107,18 @@ export default function Feed({ auth, socket }: FeedProps) {
     <div className="feed">
       <div className="filter-bar">
         <TagFilter tags={tags} value={tagFilter} onChange={setTagFilter} />
+        <select
+          value={days ?? ""}
+          onChange={(e) =>
+            setDays(e.target.value === "" ? null : Number(e.target.value))
+          }
+        >
+          <option value="">All time</option>
+          <option value="1">Today</option>
+          <option value="7">Last 7 days</option>
+          <option value="14">Last 14 days</option>
+          <option value="30">Last 30 days</option>
+        </select>
         {auth && (
           <label className="mine-toggle">
             <input

@@ -3,6 +3,7 @@ import { createApp } from "../app";
 import { clearTestDB, disconnectTestDB } from "./setup";
 import { prisma } from "../db";
 import { hashPassword } from "../utils/password";
+import { subDays } from "date-fns";
 
 const app = createApp();
 
@@ -145,6 +146,12 @@ describe("POST /api/resources", () => {
 });
 
 describe("GET /api/resources", () => {
+  it("returns an empty array when no resources are trending", async () => {
+    const res = await request(app).get(`/api/resources`).query({ days: 7 });
+    expect(res.status).toBe(200);
+    expect(res.body.resources).toEqual([]);
+  });
+
   it("filters by tag", async () => {
     const { token } = await registerAndLogin("filter@example.com");
 
@@ -167,6 +174,187 @@ describe("GET /api/resources", () => {
     expect(res.status).toBe(200);
     expect(res.body.resources).toHaveLength(1);
     expect(res.body.resources[0].title).toBe("CSS Tricks");
+  });
+
+  it("filters resources from a particular user ONLY", async () => {
+    const { token: myToken, user: myUser } = await registerAndLogin("my@example.com");
+    const { token: foreignToken } = await registerAndLogin("foreign@example.com");
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${myToken}`)
+      .send({ title: "My Post", url: "https://example.com", tags: ["my"] });
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${foreignToken}`)
+      .send({ title: "Foreign Post", url: "https://example.com", tags: ["foreign"] });
+
+    const res = await request(app).get(`/api/resources`).query({ submittedBy: myUser.id })
+    expect(res.status).toBe(200);
+    expect(res.body.resources).toHaveLength(1);
+    expect(res.body.resources[0].title).toBe("My Post");
+  })
+
+  it.each([7, 14, 30])(
+    "filters posts based on reactions within a given time window (%i)",
+    async (day) => {
+      const { token: ownerToken } =
+        await registerAndLogin("owner3@example.com");
+      const { token: secondOwnerToken } =
+        await registerAndLogin("owner2@example.com");
+      const { token: thirdOwnerToken } =
+        await registerAndLogin("owner1@example.com");
+      const { token: firstOtherToken } =
+        await registerAndLogin("other@example.com");
+      const { token: oldReactionToken } =
+        await registerAndLogin("other2@example.com");
+
+      const createRes1 = await request(app)
+        .post("/api/resources")
+        .set("Authorization", `Bearer ${ownerToken}`)
+        .send({
+          title: "Docker in a month of lunches",
+          url: "https://docker.example.com",
+        });
+
+      const createRes2 = await request(app)
+        .post("/api/resources")
+        .set("Authorization", `Bearer ${secondOwnerToken}`)
+        .send({ title: "Learning Go", url: "https://go.example.com" });
+
+      const boringRes = await request(app)
+        .post("/api/resources")
+        .set("Authorization", `Bearer ${thirdOwnerToken}`)
+        .send({ title: "Boring Git", url: "https://git.example.com" });
+
+      const resourceId1 = createRes1.body.resource.id;
+      const resourceId2 = createRes2.body.resource.id;
+
+      await request(app)
+        .post(`/api/resources/${resourceId1}/reactions`)
+        .set("Authorization", `Bearer ${ownerToken}`)
+        .send({ emoji: "⭐" });
+
+      await request(app)
+        .post(`/api/resources/${resourceId1}/reactions`)
+        .set("Authorization", `Bearer ${firstOtherToken}`)
+        .send({ emoji: "⭐" });
+
+      await request(app)
+        .post(`/api/resources/${resourceId2}/reactions`)
+        .set("Authorization", `Bearer ${secondOwnerToken}`)
+        .send({ emoji: "👍" });
+
+      const reactRes3 = await request(app)
+        .post(`/api/resources/${resourceId1}/reactions`)
+        .set("Authorization", `Bearer ${oldReactionToken}`)
+        .send({ emoji: "⭐" });
+
+      const backDatedReactionId = reactRes3.body.resource.reactions[0].id;
+
+      const currentDay = new Date();
+      const somePastDate = subDays(currentDay, day + 3);
+
+      await prisma.reaction.update({
+        where: { id: backDatedReactionId },
+        data: { createdAt: somePastDate },
+      });
+
+      const res = await request(app).get(`/api/resources?days=${day}`);
+      expect(res.status).toBe(200);
+      expect(res.body.resources).toHaveLength(2);
+      expect(res.body.resources[0].reactions).toHaveLength(2);
+      expect(res.body.resources[1].reactions).toHaveLength(1);
+      expect(res.body.resources[0].id).toBe(resourceId1);
+      expect(res.body.resources[0]);
+      expect(res.body.resources[1].id).toBe(resourceId2);
+      expect(res.body.resources).not.toContain(boringRes);
+    },
+  );
+
+  it("combines tag, submittedBy, and days filters together", async () => {
+    const { token: myToken, user: myUser } = await registerAndLogin("combo-mine@example.com");
+    const { token: foreignToken } = await registerAndLogin("combo-foreign@example.com");
+
+    // my user: two "js"-tagged posts (no reactions) + one "rare"-tagged post (reactions below)
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${myToken}`)
+      .send({ title: "My JS Post 1", url: "https://example.com/mine-1", tags: ["js"] });
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${myToken}`)
+      .send({ title: "My JS Post 2", url: "https://example.com/mine-2", tags: ["js"] });
+
+    const rareRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${myToken}`)
+      .send({ title: "My Rare Post", url: "https://example.com/mine-rare", tags: ["rare"] });
+
+    const rareResourceId = rareRes.body.resource.id;
+
+    // foreign user: one overlapping "js" post + one overlapping "rare" post (with reactions)
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${foreignToken}`)
+      .send({ title: "Foreign JS Post", url: "https://example.com/foreign-js", tags: ["js"] });
+
+    const foreignRareRes = await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${foreignToken}`)
+      .send({ title: "Foreign Rare Post", url: "https://example.com/foreign-rare", tags: ["rare"] });
+
+    const foreignRareResourceId = foreignRareRes.body.resource.id;
+
+    // react to my rare post 3 times, then backdate the earliest reaction outside the days window
+    await request(app)
+      .post(`/api/resources/${rareResourceId}/reactions`)
+      .set("Authorization", `Bearer ${myToken}`)
+      .send({ emoji: "⭐" });
+
+    await request(app)
+      .post(`/api/resources/${rareResourceId}/reactions`)
+      .set("Authorization", `Bearer ${foreignToken}`)
+      .send({ emoji: "👍" });
+
+    const thirdReactionRes = await request(app)
+      .post(`/api/resources/${rareResourceId}/reactions`)
+      .set("Authorization", `Bearer ${myToken}`)
+      .send({ emoji: "🔥" });
+
+    const earliestReactionId = thirdReactionRes.body.resource.reactions[0].id;
+    const outsideWindow = subDays(new Date(), 10);
+
+    await prisma.reaction.update({
+      where: { id: earliestReactionId },
+      data: { createdAt: outsideWindow },
+    });
+
+    // react to the foreign rare post twice, well within the window — should still be excluded by submittedBy
+    await request(app)
+      .post(`/api/resources/${foreignRareResourceId}/reactions`)
+      .set("Authorization", `Bearer ${foreignToken}`)
+      .send({ emoji: "⭐" });
+
+    await request(app)
+      .post(`/api/resources/${foreignRareResourceId}/reactions`)
+      .set("Authorization", `Bearer ${myToken}`)
+      .send({ emoji: "👍" });
+
+    const res = await request(app).get("/api/resources").query({
+      tag: "rare",
+      submittedBy: myUser.id,
+      days: 7,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resources).toHaveLength(1);
+    expect(res.body.resources[0].id).toBe(rareResourceId);
+    expect(res.body.resources[0].title).toBe("My Rare Post");
+    // 3 reactions posted, 1 backdated outside the window — only 2 should remain
+    expect(res.body.resources[0].reactions).toHaveLength(2);
   });
 });
 
@@ -246,7 +434,7 @@ describe("GET /api/resources/leaderboard", () => {
   it("ranks contributors by count descending, excluding zero-resource users", async () => {
     const alice = await registerAndLogin("alice@example.com");
     const bob = await registerAndLogin("bob@example.com");
-    await registerAndLogin("carol@example.com"); // submits nothing
+    await registerAndLogin("carol@example.com");
 
     await request(app)
       .post("/api/resources")
