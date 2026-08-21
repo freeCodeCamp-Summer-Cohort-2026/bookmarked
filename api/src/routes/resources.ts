@@ -69,10 +69,27 @@ router.get("/export", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/resources?tag=<tag>&submittedBy=<userId>&trending=<days>
+// GET /api/resources?tag=<tag>&submittedBy=<userId>&trending=<days>&q=<search>
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const { tag, submittedBy, days } = req.query;
+    const { tag, submittedBy, q, days } = req.query;
+
+    let matchingIds: string[] | undefined;
+
+    if (typeof q === "string") {
+      const searchTerm = q.trim();
+
+      if (searchTerm) {
+        const matches = await prisma.$queryRaw<{ id: string }[]>`
+          select id from "Resource" where to_tsvector(
+            'english', coalesce("title",'') || ' ' || coalesce("description", '')
+          ) @@ websearch_to_tsquery('english', ${searchTerm})
+        `;
+
+        matchingIds = matches.map(({ id }) => id);
+      }
+    }
+
     const parsedDays = typeof days === "string" ? parseInt(days) : undefined;
     const isTrending =
       typeof parsedDays === "number" &&
@@ -87,6 +104,7 @@ router.get("/", async (req: Request, res: Response) => {
         ...(typeof submittedBy === "string"
           ? { submittedById: submittedBy }
           : {}),
+        ...(matchingIds !== undefined ? { id: { in: matchingIds } } : {}),
       },
 
       ...(isTrending ? {} : { orderBy: { createdAt: "desc" as const } }),

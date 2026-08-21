@@ -70,9 +70,15 @@ export function getResource(id: string) {
 }
 
 export function listResources(
-  params: { tag?: string; submittedBy?: string; days?: number | null } = {},
+  params: {
+    tag?: string;
+    submittedBy?: string;
+    q?: string;
+    days?: number | null;
+  } = {},
 ) {
   const search = new URLSearchParams();
+  if (params.q) search.set("q", params.q);
   if (params.tag) search.set("tag", params.tag);
   if (params.submittedBy) search.set("submittedBy", params.submittedBy);
   if (params.days !== undefined && params.days !== null && params.days > 0) {

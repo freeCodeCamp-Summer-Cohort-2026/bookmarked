@@ -13,9 +13,22 @@ interface FeedProps {
   socket: Socket | null;
 }
 
+export function matchesResourceSearch(
+  resource: { title?: string; description?: string },
+  query: string,
+): boolean {
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return true;
+  const targetText =
+    `${resource.title ?? ""} ${resource.description ?? ""}`.toLowerCase();
+  return terms.every((term) => targetText.includes(term));
+}
+
 export default function Feed({ auth, socket }: FeedProps) {
   const [resources, setResources] = useState<Resource[]>([]);
   const [tagFilter, setTagFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [mineOnly, setMineOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState<number | null>(null);
@@ -29,9 +42,15 @@ export default function Feed({ auth, socket }: FeedProps) {
   }, [auth]);
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
     let cancelled = false;
     setLoading(true);
     listResources({
+      q: debouncedQuery || undefined,
       tag: tagFilter || undefined,
       submittedBy: mineOnly && auth ? auth.user.id : undefined,
       days: days,
@@ -50,7 +69,7 @@ export default function Feed({ auth, socket }: FeedProps) {
     return () => {
       cancelled = true;
     };
-  }, [tagFilter, mineOnly, auth, days]);
+  }, [debouncedQuery, tagFilter, mineOnly, auth, days]);
 
   useEffect(() => {
     if (!socket) return;
@@ -63,8 +82,12 @@ export default function Feed({ auth, socket }: FeedProps) {
 
       const matchesTagFilter =
         !tagFilter || (resource.tags && resource.tags.includes(tagFilter));
+      const matchesSearchFilter = matchesResourceSearch(
+        resource,
+        debouncedQuery,
+      );
 
-      if (matchesMineOnlyFilter && matchesTagFilter) {
+      if (matchesMineOnlyFilter && matchesTagFilter && matchesSearchFilter) {
         setResources((prev) => [resource, ...prev]);
       }
     }
@@ -81,7 +104,7 @@ export default function Feed({ auth, socket }: FeedProps) {
       socket.off("resource:created", handleCreated);
       socket.off("resource:updated", handleUpdated);
     };
-  }, [socket, auth, mineOnly, tagFilter, days]);
+  }, [socket, auth, mineOnly, tagFilter, debouncedQuery, days]);
 
   const tags = useMemo(() => {
     const set = new Set<string>();
@@ -107,6 +130,13 @@ export default function Feed({ auth, socket }: FeedProps) {
     <div className="feed">
       <div className="filter-bar">
         <TagFilter tags={tags} value={tagFilter} onChange={setTagFilter} />
+        <input
+          type="search"
+          placeholder="Search resources..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="search-input"
+        />
         <select
           value={days ?? ""}
           onChange={(e) =>

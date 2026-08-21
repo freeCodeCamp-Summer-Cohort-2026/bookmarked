@@ -229,6 +229,27 @@ section {
   margin-bottom: 1rem;
 }
 
+.search-input {
+  flex: 1;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  background-color: #ffffff;
+  color: #1a1a2e;
+  outline: none;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
+}
+.search-input:focus {
+  border-color: #2f8f5b;
+  box-shadow: 0 0 0 2px rgba(47, 143, 91, 0.15);
+}
+.search-input::placeholder {
+  color: #888;
+}
 .mine-toggle {
   display: flex;
   font-family: var(--font-ui);

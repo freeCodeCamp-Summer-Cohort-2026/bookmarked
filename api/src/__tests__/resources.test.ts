@@ -176,6 +176,133 @@ describe("GET /api/resources", () => {
     expect(res.body.resources[0].title).toBe("CSS Tricks");
   });
 
+  it("trims the search query", async () => {
+    const { token } = await registerAndLogin("trim-search@example.com");
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "React Guide",
+        description: "Learn React",
+        url: "https://example.com/react",
+        tags: ["react"],
+      });
+
+    const res = await request(app)
+      .get("/api/resources")
+      .query({ q: "  React  " });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resources).toHaveLength(1);
+    expect(res.body.resources[0].title).toBe("React Guide");
+  });
+  it("returns no resources when search query has no matches", async () => {
+    const { token } = await registerAndLogin("no-results@example.com");
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "React Guide",
+        description: "Learn React",
+        url: "https://example.com/react",
+        tags: ["react"],
+      });
+
+    const res = await request(app).get("/api/resources").query({ q: "Python" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resources).toHaveLength(0);
+  });
+  it("filters by search query in title", async () => {
+    const { token } = await registerAndLogin("search@example.com");
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "React Hooks Guide",
+        description: "Learn useState and useEffect",
+        url: "https://example.com/react",
+        tags: ["react"],
+      });
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Go Docs", url: "https://go.dev", tags: ["go"] });
+
+    const res = await request(app).get("/api/resources").query({ q: "React" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resources).toHaveLength(1);
+    expect(res.body.resources[0].title).toBe("React Hooks Guide");
+  });
+  it("filters by search query in description", async () => {
+    const { token } = await registerAndLogin("description-search@example.com");
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "Frontend Guide",
+        description: "A complete guide to React and TypeScript",
+        url: "https://example.com/frontend",
+        tags: ["frontend"],
+      });
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "Go Guide",
+        description: "Learn the Go programming language",
+        url: "https://example.com/go",
+        tags: ["go"],
+      });
+
+    const res = await request(app)
+      .get("/api/resources")
+      .query({ q: "TypeScript" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resources).toHaveLength(1);
+    expect(res.body.resources[0].title).toBe("Frontend Guide");
+  });
+  it("combines search query with tags filter", async () => {
+    const { token } = await registerAndLogin("combined-filter@example.com");
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "React Guide",
+        description: "Learn React",
+        url: "https://example.com/react",
+        tags: ["javascript"],
+      });
+
+    await request(app)
+      .post("/api/resources")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "React CSS Guide",
+        description: "Learn React with CSS",
+        url: "https://example.com/react-css",
+        tags: ["css"],
+      });
+
+    const res = await request(app).get("/api/resources").query({
+      q: "React",
+      tag: "css",
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resources).toHaveLength(1);
+    expect(res.body.resources[0].title).toBe("React CSS Guide");
+  });
+
   it("filters resources from a particular user ONLY", async () => {
     const { token: myToken, user: myUser } = await registerAndLogin("my@example.com");
     const { token: foreignToken } = await registerAndLogin("foreign@example.com");
