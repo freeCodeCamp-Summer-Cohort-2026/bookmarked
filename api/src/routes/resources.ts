@@ -94,19 +94,19 @@ router.get("/", async (req: Request, res: Response) => {
         submittedBy: { select: { id: true, displayName: true, email: true } },
         reactions: isTrending
           ? {
-            where: { createdAt: { gte: cutOff } },
-            include: {
-              user: { select: { id: true, displayName: true, email: true } },
-            },
-            orderBy: { createdAt: "asc" as const },
-          }
+              where: { createdAt: { gte: cutOff } },
+              include: {
+                user: { select: { id: true, displayName: true, email: true } },
+              },
+              orderBy: { createdAt: "asc" as const },
+            }
           : resourceInclude.reactions,
       },
     });
     const result = isTrending
       ? resources
-        .filter((resource) => resource.reactions.length > 0)
-        .sort((a, b) => b.reactions.length - a.reactions.length)
+          .filter((resource) => resource.reactions.length > 0)
+          .sort((a, b) => b.reactions.length - a.reactions.length)
       : resources;
 
     if (result.length === 0) return res.json({ resources: [] });
@@ -117,14 +117,40 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
+const MAX_LEADERBOARD_SIZE = 100;
 // GET /api/resources/leaderboard
 // Registered before "/:id" so it is not matched as a resource id.
-router.get("/leaderboard", async (_req: Request, res: Response) => {
+router.get("/leaderboard", async (req: Request, res: Response) => {
   try {
+    const { limit, offset } = req.query;
+
+    const parsedLimit =
+      typeof limit === "string" ? parseInt(limit, 10) : MAX_LEADERBOARD_SIZE;
+
+    if (
+      Number.isNaN(parsedLimit) ||
+      parsedLimit < 0 ||
+      parsedLimit > MAX_LEADERBOARD_SIZE
+    ) {
+      return res.status(400).json({
+        error: `limit must be a number between 0 and ${MAX_LEADERBOARD_SIZE}`,
+      });
+    }
+
+    const parsedOffset = typeof offset === "string" ? parseInt(offset, 10) : 0;
+
+    if (Number.isNaN(parsedOffset) || parsedOffset < 0) {
+      return res
+        .status(400)
+        .json({ error: "offset must be a non-negative number" });
+    }
+
     const grouped = await prisma.resource.groupBy({
       by: ["submittedById"],
       _count: { submittedById: true },
       orderBy: { _count: { submittedById: "desc" } },
+      skip: parsedOffset,
+      take: parsedLimit,
     });
 
     const users = await prisma.user.findMany({

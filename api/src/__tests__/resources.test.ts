@@ -177,8 +177,11 @@ describe("GET /api/resources", () => {
   });
 
   it("filters resources from a particular user ONLY", async () => {
-    const { token: myToken, user: myUser } = await registerAndLogin("my@example.com");
-    const { token: foreignToken } = await registerAndLogin("foreign@example.com");
+    const { token: myToken, user: myUser } =
+      await registerAndLogin("my@example.com");
+    const { token: foreignToken } = await registerAndLogin(
+      "foreign@example.com",
+    );
 
     await request(app)
       .post("/api/resources")
@@ -188,13 +191,19 @@ describe("GET /api/resources", () => {
     await request(app)
       .post("/api/resources")
       .set("Authorization", `Bearer ${foreignToken}`)
-      .send({ title: "Foreign Post", url: "https://example.com", tags: ["foreign"] });
+      .send({
+        title: "Foreign Post",
+        url: "https://example.com",
+        tags: ["foreign"],
+      });
 
-    const res = await request(app).get(`/api/resources`).query({ submittedBy: myUser.id })
+    const res = await request(app)
+      .get(`/api/resources`)
+      .query({ submittedBy: myUser.id });
     expect(res.status).toBe(200);
     expect(res.body.resources).toHaveLength(1);
     expect(res.body.resources[0].title).toBe("My Post");
-  })
+  });
 
   it.each([7, 14, 30])(
     "filters posts based on reactions within a given time window (%i)",
@@ -274,24 +283,40 @@ describe("GET /api/resources", () => {
   );
 
   it("combines tag, submittedBy, and days filters together", async () => {
-    const { token: myToken, user: myUser } = await registerAndLogin("combo-mine@example.com");
-    const { token: foreignToken } = await registerAndLogin("combo-foreign@example.com");
+    const { token: myToken, user: myUser } = await registerAndLogin(
+      "combo-mine@example.com",
+    );
+    const { token: foreignToken } = await registerAndLogin(
+      "combo-foreign@example.com",
+    );
 
     // my user: two "js"-tagged posts (no reactions) + one "rare"-tagged post (reactions below)
     await request(app)
       .post("/api/resources")
       .set("Authorization", `Bearer ${myToken}`)
-      .send({ title: "My JS Post 1", url: "https://example.com/mine-1", tags: ["js"] });
+      .send({
+        title: "My JS Post 1",
+        url: "https://example.com/mine-1",
+        tags: ["js"],
+      });
 
     await request(app)
       .post("/api/resources")
       .set("Authorization", `Bearer ${myToken}`)
-      .send({ title: "My JS Post 2", url: "https://example.com/mine-2", tags: ["js"] });
+      .send({
+        title: "My JS Post 2",
+        url: "https://example.com/mine-2",
+        tags: ["js"],
+      });
 
     const rareRes = await request(app)
       .post("/api/resources")
       .set("Authorization", `Bearer ${myToken}`)
-      .send({ title: "My Rare Post", url: "https://example.com/mine-rare", tags: ["rare"] });
+      .send({
+        title: "My Rare Post",
+        url: "https://example.com/mine-rare",
+        tags: ["rare"],
+      });
 
     const rareResourceId = rareRes.body.resource.id;
 
@@ -299,12 +324,20 @@ describe("GET /api/resources", () => {
     await request(app)
       .post("/api/resources")
       .set("Authorization", `Bearer ${foreignToken}`)
-      .send({ title: "Foreign JS Post", url: "https://example.com/foreign-js", tags: ["js"] });
+      .send({
+        title: "Foreign JS Post",
+        url: "https://example.com/foreign-js",
+        tags: ["js"],
+      });
 
     const foreignRareRes = await request(app)
       .post("/api/resources")
       .set("Authorization", `Bearer ${foreignToken}`)
-      .send({ title: "Foreign Rare Post", url: "https://example.com/foreign-rare", tags: ["rare"] });
+      .send({
+        title: "Foreign Rare Post",
+        url: "https://example.com/foreign-rare",
+        tags: ["rare"],
+      });
 
     const foreignRareResourceId = foreignRareRes.body.resource.id;
 
@@ -461,6 +494,46 @@ describe("GET /api/resources/leaderboard", () => {
       user: { id: bob.user.id },
       count: 1,
     });
+  });
+
+  it("truncates and paginates leaderboard results", async () => {
+    // 4 users posting
+    const plan = [
+      ["alice@example.com", 1],
+      ["bob@example.com", 2],
+      ["carol@example.com", 3],
+      ["dave@example.com", 4],
+    ] as const;
+
+    for (const [email, howMany] of plan) {
+      const { token } = await registerAndLogin(email);
+      for (let i = 0; i < howMany; i++) {
+        await request(app)
+          .post("/api/resources")
+          .set("Authorization", `Bearer ${token}`)
+          .send({
+            title: `${email}-${i}`,
+            url: `https://${email.split("@")[0]}-${i}.example.com`,
+          });
+      }
+    }
+    const page1 = await request(app).get("/api/resources/leaderboard?limit=2");
+    expect(page1.status).toBe(200);
+    expect(page1.body.leaderboard).toHaveLength(2);
+    expect(page1.body.leaderboard[0].count).toBe(4);
+
+    const page2 = await request(app).get(
+      "/api/resources/leaderboard?limit=2&offset=2",
+    );
+    expect(page2.status).toBe(200);
+    expect(page2.body.leaderboard.map((e: any) => e.count)).toEqual([2, 1]);
+  });
+
+  it("rejects invalid query params with 400", async () => {
+    const res = await request(app).get(
+      "/api/resources/leaderboard?limit=banana&offset=-5",
+    );
+    expect(res.status).toBe(400);
   });
 });
 
