@@ -16,21 +16,18 @@ export const formatRelativeTime = (inputString: Date | string) => {
 
   const diffInMinutes = diffInSeconds / 60;
   if (diffInMinutes < 60) {
-    // changed Math.round to Math.floor to stay within edge case values
     const roundedMinutes = Math.floor(diffInMinutes);
     return `${roundedMinutes} minute${roundedMinutes === 1 ? "" : "s"} ago`;
   }
 
   const diffInHours = diffInMinutes / 60;
   if (diffInHours < 24) {
-    // changed Math.round to Math.floor to stay within edge case values
     const roundedHours = Math.floor(diffInHours);
     return `${roundedHours} hour${roundedHours === 1 ? "" : "s"} ago`;
   }
 
   const diffInDays = diffInHours / 24;
   if (diffInDays < 7) {
-    // changed Math.round to Math.floor to stay within edge case values
     const roundedDays = Math.floor(diffInDays);
     return `${roundedDays} day${roundedDays === 1 ? "" : "s"} ago`;
   }

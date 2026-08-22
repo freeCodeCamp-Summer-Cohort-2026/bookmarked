@@ -429,6 +429,6 @@ describe("formatRelativeTime (timestamp boundaries: issue#89)", () => {
     // 7 days
     const timeFactored = 7 * 24 * 60 * 60 * 1000;
     const t = new Date(fixedNow.getTime() - timeFactored);
-    expect(formatRelativeTime(t)).toBe(t.toLocaleString());
+    expect(formatRelativeTime(t)).toBe(t.toLocaleString("en-US"));
   });
 });
