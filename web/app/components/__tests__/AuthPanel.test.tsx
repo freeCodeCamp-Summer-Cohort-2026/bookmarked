@@ -6,7 +6,7 @@ jest.mock("@/lib/api", () => ({
     register: jest.fn(),
 }));
 
-import { login } from "@/lib/api";
+import { login, register } from "@/lib/api";
 
 describe("AuthPanel email validation", () => {
     beforeEach(() => {
@@ -39,7 +39,7 @@ describe("AuthPanel email validation", () => {
         expect(screen.getByText("Email is required.")).toBeInTheDocument();
     });
 
-    test("shows an error for an email input with spaces", () => {
+    test("shows an error for an email input with only spaces", () => {
         render(<AuthPanel auth={null} onSignIn={() => { }} onSignOut={() => { }} />);
 
         const emailInput = screen.getByPlaceholderText("Email");
@@ -89,6 +89,30 @@ describe("AuthPanel email validation", () => {
         expect(screen.queryByText("Please enter a valid email.")).not.toBeInTheDocument();
     });
 
+    test("valid trimmed email gets no error and login is successful", () => {
+        const { container } = render(<AuthPanel auth={null} onSignIn={() => { }} onSignOut={() => { }} />);
+
+        const emailInput = screen.getByPlaceholderText("Email");
+        const passwordInput = screen.getByPlaceholderText("Password");
+        const formElement = container.querySelector("form");
+
+        expect(formElement).not.toBeNull();
+
+        fireEvent.change(emailInput, {
+            target: { value: " example@example.com   " },
+        });
+        fireEvent.blur(emailInput);
+        fireEvent.change(passwordInput, {
+            target: { value: "password123" },
+        });
+        fireEvent.submit(formElement!);
+
+        expect(login).toHaveBeenCalledWith({
+            email: "example@example.com",
+            password: "password123"
+        });
+    });
+
     test("does not show an error for a valid email", () => {
         render(<AuthPanel auth={null} onSignIn={() => { }} onSignOut={() => { }} />);
 
@@ -100,5 +124,99 @@ describe("AuthPanel email validation", () => {
         fireEvent.blur(emailInput);
 
         expect(screen.queryByText("Please enter a valid email.")).not.toBeInTheDocument();
+    });
+
+    test("login is successful for valid email", () => {
+        const { container } = render(<AuthPanel auth={null} onSignIn={() => { }} onSignOut={() => { }} />);
+
+        const emailInput = screen.getByPlaceholderText("Email");
+        const passwordInput = screen.getByPlaceholderText("Password");
+        const formElement = container.querySelector("form");
+
+        expect(formElement).not.toBeNull();
+
+        fireEvent.change(emailInput, {
+            target: { value: "example@example.com" },
+        });
+        fireEvent.blur(emailInput);
+        fireEvent.change(passwordInput, {
+            target: { value: "password123" },
+        });
+        fireEvent.submit(formElement!);
+
+        expect(login).toHaveBeenCalledWith({
+            email: "example@example.com",
+            password: "password123"
+        });
+    });
+
+    test("registration fails for invalid email", () => {
+        const { container } = render(<AuthPanel auth={null} onSignIn={() => { }} onSignOut={() => { }} />);
+
+        const registerTab = screen.getByText("Register");
+        fireEvent.click(registerTab);
+        expect(registerTab).not.toBeNull();
+
+        const nameInput = screen.getByPlaceholderText("Display name");
+        const emailInput = screen.getByPlaceholderText("Email");
+        const passwordInput = screen.getByPlaceholderText("Password");
+        const confirmPasswordInput = screen.getByPlaceholderText("Confirm password");
+        const formElement = container.querySelector("form");
+
+        expect(formElement).not.toBeNull();
+
+        fireEvent.change(nameInput, {
+            target: { value: "Test User name" },
+        });
+        fireEvent.change(emailInput, {
+            target: { value: "example.com " },
+        });
+        fireEvent.blur(emailInput);
+        fireEvent.change(passwordInput, {
+            target: { value: "password123" },
+        });
+        fireEvent.change(confirmPasswordInput, {
+            target: { value: "password123" },
+        });
+        fireEvent.submit(formElement!);
+
+        expect(login).not.toHaveBeenCalled();
+    });
+
+    test("registration is successful for valid email", () => {
+        const { container } = render(<AuthPanel auth={null} onSignIn={() => { }} onSignOut={() => { }} />);
+
+        const registerTab = screen.getByText("Register");
+        fireEvent.click(registerTab);
+        expect(registerTab).not.toBeNull();
+
+        const nameInput = screen.getByPlaceholderText("Display name");
+        const emailInput = screen.getByPlaceholderText("Email");
+        const passwordInput = screen.getByPlaceholderText("Password");
+        const confirmPasswordInput = screen.getByPlaceholderText("Confirm password");
+        const formElement = container.querySelector("form");
+
+        expect(formElement).not.toBeNull();
+
+        fireEvent.change(nameInput, {
+            target: { value: "Test User name" },
+        });
+        fireEvent.change(emailInput, {
+            target: { value: "example@example.com" },
+        });
+        fireEvent.blur(emailInput);
+        fireEvent.change(passwordInput, {
+            target: { value: "password123" },
+        });
+        fireEvent.change(confirmPasswordInput, {
+            target: { value: "password123" },
+        });
+        fireEvent.submit(formElement!);
+
+        expect(register).toHaveBeenCalledWith({
+            displayName: "Test User name",
+            email: "example@example.com",
+            password: "password123",
+        });
     });
 });
