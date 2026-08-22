@@ -2,6 +2,7 @@ import ResourceCard, { groupReactions } from "../ResourceCard";
 import { AuthState, Resource } from "@/lib/types";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { addReaction } from "@/lib/api";
+import { formatRelativeTime } from "@/app/utils/formatRelativeTime";
 
 jest.mock("@/lib/api");
 
@@ -342,5 +343,92 @@ describe("ResourceCard", () => {
 
     expect(handleUpdated).not.toHaveBeenCalled();
     expect(handleReactionSelected).not.toHaveBeenCalled();
+  });
+});
+
+describe("formatRelativeTime (timestamp boundaries: issue#89)", () => {
+  // fake timers for deterministic behavior
+  beforeAll(() => {
+    jest.useFakeTimers();
+  });
+
+  // restores real timers
+  afterAll(() => {
+    jest.useRealTimers();
+  });
+
+  // fixated now, so that tests are deterministic and doesnt depend on local timezone
+  const fixedNow = new Date("2026-08-17T12:00:00.000Z");
+
+  const setNow = () => {
+    jest.setSystemTime(fixedNow);
+  };
+
+  it("future -> in future", () => {
+    setNow();
+    // 5 minutes in future
+    const timeFactored = (5 * 60) * 1000;
+    const t = new Date(fixedNow.getTime() + timeFactored);
+    expect(formatRelativeTime(t)).toBe("in future");
+  });
+
+  it("59 seconds ago -> just now", () => {
+    setNow();
+    // 59 seconds
+    const timeFactored = 59 * 1000;
+    const t = new Date(fixedNow.getTime() - timeFactored);
+    expect(formatRelativeTime(t)).toBe("just now");
+  });
+
+  it("59m40s ago -> 59 minutes ago", () => {
+    setNow();
+    // 59 minutes + 40 seconds
+    const timeFactored = (59 * 60 + 40) * 1000;
+    const t = new Date(fixedNow.getTime() - timeFactored);
+    expect(formatRelativeTime(t)).toBe("59 minutes ago");
+  });
+
+  it("60 minutes ago -> 1 hour ago", () => {
+    setNow();
+    // 60 minutes
+    const timeFactored = 60 * 60 * 1000;
+    const t = new Date(fixedNow.getTime() - timeFactored);
+    expect(formatRelativeTime(t)).toBe("1 hour ago");
+  });
+
+  it("23h40m ago -> 23 hours ago", () => {
+    setNow();
+    // 23 hours + 40 minutes
+    const twentyThreeHours = 23 * 60 * 60 * 1000;
+    const fortyMinutes = 40 * 60 * 1000;
+    const timeFactored = twentyThreeHours + fortyMinutes;
+    const t = new Date(fixedNow.getTime() - timeFactored);
+    expect(formatRelativeTime(t)).toBe("23 hours ago");
+  });
+
+  it("24 hours ago -> 1 day ago", () => {
+    setNow();
+    // 24 hours
+    const timeFactored = 24 * 60 * 60 * 1000;
+    const t = new Date(fixedNow.getTime() - timeFactored);
+    expect(formatRelativeTime(t)).toBe("1 day ago");
+  });
+
+  it("6 days 14 hours ago -> 6 days ago (not 7)", () => {
+    setNow();
+    // 6 days + 14 hours
+    const sixDays = 6 * 24 * 60 * 60 * 1000;
+    const fourteenHours = 14 * 60 * 60 * 1000;
+    const timeFactored = sixDays + fourteenHours;
+    const t = new Date(fixedNow.getTime() - timeFactored);
+    expect(formatRelativeTime(t)).toBe("6 days ago");
+  });
+
+  it("exactly 7 days ago -> full localized date", () => {
+    setNow();
+    // 7 days
+    const timeFactored = 7 * 24 * 60 * 60 * 1000;
+    const t = new Date(fixedNow.getTime() - timeFactored);
+    expect(formatRelativeTime(t)).toBe(t.toLocaleString("en-US"));
   });
 });
