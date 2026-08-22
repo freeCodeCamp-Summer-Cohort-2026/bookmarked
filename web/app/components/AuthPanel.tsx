@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, ChangeEvent, useState } from "react";
 import { login, register } from "@/lib/api";
 import { AuthState } from "@/lib/types";
 
@@ -38,9 +38,32 @@ export default function AuthPanel({
     );
   }
 
+  function validateEmail() {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      setError("Email is required.");
+      return false;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(trimmedEmail)) {
+      setError("Please enter a valid email.");
+      return false;
+    }
+
+    setError(null);
+    return true;
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+
+    if (!validateEmail()) {
+      return;
+    }
+
+    const trimmedEmail = email.trim();
     setLoading(true);
 
     if (mode === "register" && password !== confirmPassword) {
@@ -52,8 +75,8 @@ export default function AuthPanel({
     try {
       const result =
         mode === "login"
-          ? await login({ email, password })
-          : await register({ email, password, displayName });
+          ? await login({ email: trimmedEmail, password })
+          : await register({ email: trimmedEmail, password, displayName });
       onSignIn(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -94,7 +117,11 @@ export default function AuthPanel({
         type="email"
         placeholder="Email"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+          setEmail(e.target.value)
+        }
+        onBlur={() => validateEmail()}
+        onFocus={() => setError(null)}
         required
       />
 

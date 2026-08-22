@@ -642,6 +642,7 @@ section {
   color: #c62828;
   font-family: var(--font-ui);
   font-size: 0.9rem;
+  width: 100%;
 }
 
 .description-field {
